@@ -43,7 +43,7 @@ public class HintCircle : MonoBehaviour
             // 有打中東西 (且因為 LayerMask 的關係，我們確定這就是玩家)
             Debug.Log("玩家在圈內！");
 
-            PlayerController.instance.ApplyStun();
+            TestPlayerController.instance.ApplyStun();
         }
     }
     private void Update()

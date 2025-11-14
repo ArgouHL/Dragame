@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Rigidbody2D))]
-public class PlayerController : MonoBehaviour
+public class TestPlayerController : MonoBehaviour
 {
 
     [Header("Movement")]
@@ -18,7 +18,7 @@ public class PlayerController : MonoBehaviour
     private InputSystem_Actions inputSystem;
     private Camera mainCamera;
 
-    public static PlayerController instance;
+    public static TestPlayerController instance;
     public int droletCount;
     public TextMeshPro dropletText;
 

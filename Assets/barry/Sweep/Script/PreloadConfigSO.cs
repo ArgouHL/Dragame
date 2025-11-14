@@ -1,0 +1,34 @@
+
+using UnityEngine;
+using System.Collections.Generic;
+
+
+[System.Serializable]
+public class TrashPreloadConfig
+{
+    public TrashType type;
+    [Min(0)]
+    public int amount ;
+}
+
+[System.Serializable]
+public class ObstaclePreloadConfig
+{
+    public ObstacleType type;
+    [Min(0)]
+    public int amount;
+}
+
+
+
+[CreateAssetMenu(fileName = "NewPreloadConfig", menuName = "Settings/Preload Config")]
+public class PreloadConfigSO : ScriptableObject
+{
+    [Header("︰В箇更砞﹚")]
+    [Tooltip("砞﹚璶箇更–贺︰Вのㄤ计秖")]
+    public List<TrashPreloadConfig> trashToPreload;
+
+    [Header("毁锚箇更砞﹚")]
+    [Tooltip("砞﹚璶箇更–贺毁锚のㄤ计秖")]
+    public List<ObstaclePreloadConfig> obstaclesToPreload;
+}

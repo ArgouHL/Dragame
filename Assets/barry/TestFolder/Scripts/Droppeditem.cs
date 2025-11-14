@@ -39,7 +39,7 @@ public class Droppeditem : MonoBehaviour
             Debug.Log("Caught a droplet!");
 
          
-            PlayerController.instance.UpdateDropletCount();
+            TestPlayerController.instance.UpdateDropletCount();
          
 
          

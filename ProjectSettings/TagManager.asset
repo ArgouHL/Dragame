@@ -5,6 +5,9 @@ TagManager:
   serializedVersion: 3
   tags:
   - player
+  - blackHole
+  - trash
+  - airWall
   layers:
   - Default
   - TransparentFX
