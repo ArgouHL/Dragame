@@ -134,7 +134,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &379750231
 Transform:
   m_ObjectHideFlags: 0
@@ -641,7 +641,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1611628277}
   - component: {fileID: 1611628279}
-  - component: {fileID: 1611628278}
   - component: {fileID: 1611628280}
   - component: {fileID: 1611628281}
   - component: {fileID: 1611628282}
@@ -667,42 +666,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1632655381}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!58 &1611628278
-CircleCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1611628276}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0.48955464, y: -1.2}
-  m_Radius: 0.78788054
 --- !u!212 &1611628279
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -772,7 +735,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 5
   rb: {fileID: 0}
-  randomBounceAngle: 15
+  sweepRadius: 0.8
+  trashLayer:
+    serializedVersion: 2
+    m_Bits: 8
+  sweepOffset: {x: 0.46, y: -1.18}
 --- !u!114 &1611628281
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -811,7 +778,7 @@ Rigidbody2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1611628276}
-  m_BodyType: 0
+  m_BodyType: 1
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
