@@ -4,28 +4,35 @@ using UnityEngine.InputSystem;
 public class PlayerController : MonoBehaviour
 {
     public static PlayerController instance;
-   
+
     private Vector2 startMousePosition;
     private Vector2 endMousePosition;
-    private Camera mainCamera; 
-   
-  
+    private Camera mainCamera;
+    
+    Vector2 nextPos;
+    Vector3 vp;
     public Vector2 NormalizedDirection { get; private set; }
     private PlayerInput playerInput;
     private Vector2 currentPointerPosition;
 
 
-    public float moveSpeed ;
+    public float moveSpeed;
     public Rigidbody2D rb;
     private Vector2 moveDirection;
     private bool isMoving = false;
 
-    [Tooltip("反彈時的隨機角度範圍 (例如 15 度)")]
-    [SerializeField] private float randomBounceAngle = 15f;
+    public float sweepRadius ; 
+    public LayerMask trashLayer; 
+    public Vector2 sweepOffset;
+    Vector2 sweepCenter ;
+
+
+    Collider2D[] hits;
+
     private void Awake()
     {
 
-    
+
         if (instance == null)
         {
             instance = this;
@@ -50,7 +57,7 @@ public class PlayerController : MonoBehaviour
     }
     private void OnEnable()
     {
-      
+
         playerInput.actions["PointerPress"].started += OnPointerPressStarted;
         playerInput.actions["PointerPress"].canceled += OnPointerPressCanceled;
         playerInput.actions["PointerPosition"].performed += OnPointerPosition;
@@ -58,7 +65,7 @@ public class PlayerController : MonoBehaviour
 
     private void OnDisable()
     {
-        
+
         if (playerInput != null)
         {
             playerInput.actions["PointerPress"].started -= OnPointerPressStarted;
@@ -67,13 +74,13 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    
+
     private void OnPointerPressStarted(InputAction.CallbackContext context)
     {
-        isMoving = false;
+
         if (rb != null)
         {
-            rb.linearVelocity = Vector2.zero; 
+            rb.linearVelocity = Vector2.zero;
 
         }
         startMousePosition = GetWorldMousePosition();
@@ -82,24 +89,21 @@ public class PlayerController : MonoBehaviour
     private void OnPointerPressCanceled(InputAction.CallbackContext context)
     {
         endMousePosition = GetWorldMousePosition();
-        Debug.Log(startMousePosition);
-        Debug.Log(endMousePosition);
-       
-        Debug.Log(NormalizedDirection);
+      
         NormalizedDirection = (endMousePosition - startMousePosition).normalized;
-       
 
-        if (NormalizedDirection != Vector2.zero) // 避免 (0,0) 造成問題
+
+        if (NormalizedDirection != Vector2.zero) 
         {
             moveDirection = NormalizedDirection;
             isMoving = true;
         }
-       
+
 
     }
     public void OnPointerPosition(InputAction.CallbackContext context)
     {
-     
+
         currentPointerPosition = context.ReadValue<Vector2>();
     }
     private Vector2 GetWorldMousePosition()
@@ -110,31 +114,56 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (isMoving)
-        {
-            
-            rb.linearVelocity = moveDirection * moveSpeed;
-        }
+  
+        HandleMove();
     }
-    private void OnCollisionEnter2D(Collision2D collision)
+    private void HandleMove()
     {
-        if (collision.gameObject.CompareTag("airWall"))
+        if (!isMoving)
+            return;
+
+        Sweep();
+        nextPos = rb.position + moveDirection * moveSpeed * Time.fixedDeltaTime;
+
+        vp = mainCamera.WorldToViewportPoint(nextPos);
+
+     
+        if (vp.x < 0.1f || vp.x > 0.9f || vp.y < 0.1f || vp.y > 0.9f)
         {
-            
-            Vector2 wallNormal = collision.contacts[0].normal;
+            isMoving = false;
+            rb.linearVelocity = Vector2.zero;
+            Debug.Log("超出區域，停止移動");
+            return;
+        }
 
         
+        rb.linearVelocity = moveDirection * moveSpeed;
+    }
+    void Sweep()
+    {
       
-            Vector2 reflectedDirection = Vector2.Reflect(moveDirection.normalized, wallNormal);
+         sweepCenter = (Vector2)transform.position + sweepOffset;
 
-        
-            float randomAngle = Random.Range(-randomBounceAngle, randomBounceAngle);
+    
+        hits = Physics2D.OverlapCircleAll(sweepCenter, sweepRadius, trashLayer);
 
-           
-            Quaternion randomRotation = Quaternion.Euler(0, 0, randomAngle);
-            Vector2 finalDirection = randomRotation * reflectedDirection;
+        foreach (Collider2D hit in hits)
+        {
+            BaseTrash trash = hit.GetComponent<BaseTrash>();
+            if (trash != null)
+            {
+                
+                Vector2 direction = moveDirection;
 
-            moveDirection = finalDirection.normalized;
+          
+                trash.ApplyBroomHit(direction);
+            }
         }
     }
+    private void OnDrawGizmosSelected()
+    {     
+        Gizmos.color = Color.yellow;       
+        Vector2 gizmoCenter = (Vector2)transform.position + sweepOffset;      
+        Gizmos.DrawWireSphere(gizmoCenter, sweepRadius);
     }
+}

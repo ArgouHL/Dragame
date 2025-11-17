@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 2688806814780179076}
   - component: {fileID: 5661431814750773710}
   - component: {fileID: 5754869622838171507}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: balckHole
   m_TagString: blackHole
   m_Icon: {fileID: 0}

@@ -12,8 +12,7 @@ GameObject:
   - component: {fileID: 5545934319942313462}
   - component: {fileID: 7043373074332820194}
   - component: {fileID: 1208270454851290344}
-  - component: {fileID: 3429271970075226130}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: bananaTrash
   m_TagString: trash
   m_Icon: {fileID: 0}
@@ -190,36 +189,16 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  playerKnockbackForce: 1.5
-  trashKnockbackForce: 0.75
   trashType: 0
-  randomForceStrength: 1
-  totalBounceStrength: 5
-  randomnessStrength: 5
---- !u!50 &3429271970075226130
-Rigidbody2D:
-  serializedVersion: 5
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 112362120913322643}
-  m_BodyType: 0
-  m_Simulated: 1
-  m_UseFullKinematicContacts: 0
-  m_UseAutoMass: 0
-  m_Mass: 1
-  m_LinearDamping: 2.5
-  m_AngularDamping: 1
-  m_GravityScale: 0
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
+  deceleration: 5
+  viewportPadding: 0.1
+  force: 8
+  collisionCheckRadius: 0.5
+  trashLayerMask:
     serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
+    m_Bits: 8
+  hitCooldown: 0.2
+  blackHoleCheckRadius: 0.5
+  blackHoleLayerMask:
     serializedVersion: 2
-    m_Bits: 0
-  m_Interpolate: 0
-  m_SleepingMode: 1
-  m_CollisionDetection: 0
-  m_Constraints: 0
+    m_Bits: 128

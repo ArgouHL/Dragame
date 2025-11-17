@@ -12,8 +12,7 @@ GameObject:
   - component: {fileID: 6528140690148390313}
   - component: {fileID: 8780116405143948770}
   - component: {fileID: 7584989986373816456}
-  - component: {fileID: 1312520507735285131}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: canTrash
   m_TagString: trash
   m_Icon: {fileID: 0}
@@ -199,36 +198,16 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  playerKnockbackForce: 1
-  trashKnockbackForce: 0.5
   trashType: 1
-  randomForceStrength: 3
-  totalBounceStrength: 10
-  randomnessStrength: 10
---- !u!50 &1312520507735285131
-Rigidbody2D:
-  serializedVersion: 5
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 458917426043896004}
-  m_BodyType: 0
-  m_Simulated: 1
-  m_UseFullKinematicContacts: 0
-  m_UseAutoMass: 0
-  m_Mass: 1
-  m_LinearDamping: 4
-  m_AngularDamping: 1.2
-  m_GravityScale: 0
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
+  deceleration: 5
+  viewportPadding: 0.1
+  force: 10
+  collisionCheckRadius: 0.5
+  trashLayerMask:
     serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
+    m_Bits: 8
+  hitCooldown: 0.2
+  blackHoleCheckRadius: 0.5
+  blackHoleLayerMask:
     serializedVersion: 2
-    m_Bits: 0
-  m_Interpolate: 0
-  m_SleepingMode: 1
-  m_CollisionDetection: 0
-  m_Constraints: 0
+    m_Bits: 128

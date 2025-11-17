@@ -12,8 +12,7 @@ GameObject:
   - component: {fileID: 7367630615107844001}
   - component: {fileID: 873219786591372272}
   - component: {fileID: 7500339618046040888}
-  - component: {fileID: 1939453973897696051}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: paperTrash
   m_TagString: trash
   m_Icon: {fileID: 0}
@@ -189,36 +188,16 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  playerKnockbackForce: 2
-  trashKnockbackForce: 1
   trashType: 2
-  randomForceStrength: 2
-  totalBounceStrength: 20
-  randomnessStrength: 20
---- !u!50 &1939453973897696051
-Rigidbody2D:
-  serializedVersion: 5
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 983206523917251993}
-  m_BodyType: 0
-  m_Simulated: 1
-  m_UseFullKinematicContacts: 0
-  m_UseAutoMass: 0
-  m_Mass: 1
-  m_LinearDamping: 3
-  m_AngularDamping: 1
-  m_GravityScale: 0
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
+  deceleration: 5
+  viewportPadding: 0.1
+  force: 15
+  collisionCheckRadius: 0.4
+  trashLayerMask:
     serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
+    m_Bits: 8
+  hitCooldown: 0.2
+  blackHoleCheckRadius: 0.4
+  blackHoleLayerMask:
     serializedVersion: 2
-    m_Bits: 0
-  m_Interpolate: 0
-  m_SleepingMode: 1
-  m_CollisionDetection: 0
-  m_Constraints: 0
+    m_Bits: 128

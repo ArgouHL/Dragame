@@ -31,9 +31,7 @@ public class ObstaclePool : BasePool<ObstacleType, BaseObstacle>
         InitializePool(obstacleEntries);
     }
 
-    /// <summary>
-    /// 從池子獲取障礙物，並設定位置與重置狀態
-    /// </summary>
+
     public BaseObstacle GetObstacle(ObstacleType type, Vector3 position)
     {
         BaseObstacle obstacle = Get(type);
@@ -49,9 +47,7 @@ public class ObstaclePool : BasePool<ObstacleType, BaseObstacle>
         return obstacle;
     }
 
-    /// <summary>
-    /// 歸還障礙物到池子
-    /// </summary>
+
     public void ReturnObstacle(BaseObstacle obstacle)
     {
         if (obstacle == null) return;
