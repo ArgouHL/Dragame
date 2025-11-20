@@ -23,26 +23,26 @@ public class BaseTrash : BasePoolItem
     private Vector2 currentVelocity;
 
     [Tooltip("每秒速度衰減的百分比 (例如 5 = 每秒衰減 500% 的速度)")]
-    [SerializeField] private float deceleration = 5f;
+    [SerializeField] private float deceleration;
 
     [Tooltip("視口邊界的緩衝區 (0.1 = 離邊緣 10% 的地方反彈)")]
-    [SerializeField] private float viewportPadding = 0.1f;
+    [SerializeField] private float viewportPadding ;
 
-    [SerializeField] private float force = 10f;
+    [SerializeField] private float force ;
 
     [Header("連鎖碰撞設定")]
     [Tooltip("檢查其他垃圾的半徑")]
-    [SerializeField] private float collisionCheckRadius = 1.0f;
+    [SerializeField] private float collisionCheckRadius;
 
     [Tooltip("垃圾所在的圖層 (非常重要，避免檢查到玩家或地板)")]
     [SerializeField] private LayerMask trashLayerMask;
 
     [Tooltip("被擊中後的冷卻時間(秒)，防止重複觸發")]
-    [SerializeField] private float hitCooldown = 0.2f;
+    [SerializeField] private float hitCooldown ;
 
     [Header("黑洞吸收設定")]
     [Tooltip("檢查黑洞的半徑")]
-    [SerializeField] private float blackHoleCheckRadius = 1.5f;
+    [SerializeField] private float blackHoleCheckRadius;
 
     [Tooltip("黑洞所在的圖層")]
     [SerializeField] private LayerMask blackHoleLayerMask;

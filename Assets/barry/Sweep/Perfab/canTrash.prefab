@@ -201,7 +201,7 @@ MonoBehaviour:
   trashType: 1
   deceleration: 5
   viewportPadding: 0.1
-  force: 10
+  force: 40
   collisionCheckRadius: 0.5
   trashLayerMask:
     serializedVersion: 2

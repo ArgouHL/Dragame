@@ -15,7 +15,6 @@ public struct ObstacleSpawnData
     public Vector3 position;
 }
 
-
 public class LevelManager : MonoBehaviour
 {
     [Header("關卡設定檔")]
@@ -23,14 +22,31 @@ public class LevelManager : MonoBehaviour
     [SerializeField]
     private PreloadConfigSO levelConfig;
 
-    [Header("關卡生成設定")]
+    [Header("關卡生成設定 (初始)")]
     [Tooltip("要在此關卡中固定生成的障礙物列表 (類型與位置)")]
     [SerializeField]
     private List<ObstacleSpawnData> obstacleLayout = new List<ObstacleSpawnData>();
 
-    [Tooltip("要在此關卡中生成的垃圾列表 (類型與數量)")]
+    [Tooltip("要在此關卡初始時生成的垃圾列表 (類型與數量)")]
     [SerializeField]
     private List<TrashSpawnData> trashSpawnList = new List<TrashSpawnData>();
+
+    // --- [新增功能] 動態生成設定 ---
+    [Header("動態生成設定 (Runtime)")]
+    [Tooltip("是否啟用動態生成")]
+    [SerializeField]
+    private bool enableDynamicSpawn = true;
+
+    [Tooltip("每幾秒生成一個垃圾")]
+    [SerializeField]
+    private float dynamicSpawnInterval ;
+
+    [Tooltip("動態生成時，隨機從這些類型中挑選")]
+    [SerializeField]
+    private List<TrashType> dynamicTrashTypes = new List<TrashType>();
+
+    private float spawnTimer = 0f;
+    // -----------------------------
 
     [Header("生成範圍設定")]
     [Tooltip("生成區域的中心點 (世界座標)")]
@@ -51,11 +67,11 @@ public class LevelManager : MonoBehaviour
     private Transform obstacleParentContainer;
 
     [Header("垃圾生成安全距離")]
-    [Tooltip("生成垃圾時，離障礙物的最小 X 軸安全距離 (你提到的 1,1 中的 x)")]
+    [Tooltip("生成垃圾時，離障礙物的最小 X 軸安全距離")]
     [SerializeField]
     private float minSafeDistanceX = 1.0f;
 
-    [Tooltip("生成垃圾時，離障礙物的最小 Y 軸安全距離 (你提到的 1,1 中的 y)")]
+    [Tooltip("生成垃圾時，離障礙物的最小 Y 軸安全距離")]
     [SerializeField]
     private float minSafeDistanceY = 1.0f;
 
@@ -101,6 +117,49 @@ public class LevelManager : MonoBehaviour
 
         SpawnLevel(this.obstacleLayout, this.trashSpawnList);
     }
+
+    // --- [新增功能] Update 用於動態生成 ---
+    void Update()
+    {
+        DynamicallyGenerate();
+    }
+  private void DynamicallyGenerate()
+    {
+        if (!enableDynamicSpawn) return;
+        if (dynamicTrashTypes == null || dynamicTrashTypes.Count == 0) return;
+
+        spawnTimer += Time.deltaTime;
+
+        if (spawnTimer >= dynamicSpawnInterval)
+        {
+            TrySpawnDynamicTrash();
+            spawnTimer = 0f; // 重置計時器
+        }
+    }
+ 
+    private void TrySpawnDynamicTrash()
+    {
+        // 1. 隨機挑選一種垃圾類型
+        TrashType randomType = dynamicTrashTypes[Random.Range(0, dynamicTrashTypes.Count)];
+
+        // 2. 隨機挑選一個象限
+        SpawnQuadrant randomQuadrant = (SpawnQuadrant)Random.Range(0, 4);
+
+        // 3. 嘗試尋找安全位置 (嘗試 maxSpawnAttempts 次)
+        for (int i = 0; i < maxSpawnAttempts; i++)
+        {
+            Vector3 potentialPos = GetRandomPositionInQuadrant(randomQuadrant);
+
+            if (IsValidTrashSpawnPosition(potentialPos))
+            {
+                SpawnTrashAtPosition(randomType, potentialPos);
+                return; // 成功生成後直接結束
+            }
+        }
+
+        Debug.Log("動態生成失敗：找不到合適的安全位置。");
+    }
+    // ------------------------------------
 
     private void Shuffle<T>(List<T> list)
     {

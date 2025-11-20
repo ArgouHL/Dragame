@@ -14,13 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   trashToPreload:
   - type: 1
-    amount: 5
+    amount: 10
   - type: 2
-    amount: 4
+    amount: 10
   - type: 0
     amount: 0
   - type: 0
-    amount: 3
+    amount: 10
   obstaclesToPreload:
   - type: 0
     amount: 2

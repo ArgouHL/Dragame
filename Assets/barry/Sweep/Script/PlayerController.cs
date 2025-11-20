@@ -128,7 +128,7 @@ public class PlayerController : MonoBehaviour
         vp = mainCamera.WorldToViewportPoint(nextPos);
 
      
-        if (vp.x < 0.1f || vp.x > 0.9f || vp.y < 0.1f || vp.y > 0.9f)
+        if (vp.x < 0f || vp.x > 1f || vp.y < 0.1f || vp.y > 1f)
         {
             isMoving = false;
             rb.linearVelocity = Vector2.zero;
