@@ -1,5 +1,6 @@
-﻿using UnityEngine;
-using System.Collections;
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
 /// <summary>
 /// 管理「垃圾」物件的行為，包含手動物理、連鎖碰撞和被黑洞吸收。
@@ -26,33 +27,23 @@ public class BaseTrash : BasePoolItem
     [SerializeField] private float deceleration;
 
     [Tooltip("視口邊界的緩衝區 (0.1 = 離邊緣 10% 的地方反彈)")]
-    [SerializeField] private float viewportPadding ;
+    [SerializeField] private float viewportPadding;
 
-    [SerializeField] private float force ;
+    [SerializeField] private float force;
 
     [Header("連鎖碰撞設定")]
     [Tooltip("檢查其他垃圾的半徑")]
     [SerializeField] private float collisionCheckRadius;
 
-    [Tooltip("垃圾所在的圖層 (非常重要，避免檢查到玩家或地板)")]
-    [SerializeField] private LayerMask trashLayerMask;
-
     [Tooltip("被擊中後的冷卻時間(秒)，防止重複觸發")]
-    [SerializeField] private float hitCooldown ;
+    [SerializeField] private float hitCooldown;
 
-    [Header("黑洞吸收設定")]
-    [Tooltip("檢查黑洞的半徑")]
-    [SerializeField] private float blackHoleCheckRadius;
+    // 公開屬性：是否正在被吸入 (由 SpatialGridManager 和 BalckObstacle 讀取)
+    public bool IsAbsorbing { get; private set; } = false;
 
-    [Tooltip("黑洞所在的圖層")]
-    [SerializeField] private LayerMask blackHoleLayerMask;
-
-    private bool isAbsorbing = false;
     private Camera mainCamera;
-
     private bool _isRecentlyHit = false;
     private Coroutine _hitCooldownCoroutine;
-
 
     protected virtual void Awake()
     {
@@ -62,17 +53,16 @@ public class BaseTrash : BasePoolItem
 
     protected virtual void FixedUpdate()
     {
-        if (isAbsorbing) return;
+        // 如果正在被吸入，完全停止物理與碰撞邏輯
+        if (IsAbsorbing) return;
 
-        HandleBlackHoleCheck();
-
-        if (isAbsorbing) return;
-
+        // 1. 處理垃圾與垃圾的碰撞 (使用 Grid)
         if (currentVelocity.magnitude > 0.01f && !_isRecentlyHit)
         {
             HandleTrashCollisions();
         }
 
+        // 2. 處理移動與邊界
         HandleMovement();
         HandleBoundaryCheck();
     }
@@ -140,59 +130,39 @@ public class BaseTrash : BasePoolItem
     /// </summary>
     public void ApplyBroomHit(Vector2 hitDirection)
     {
-        if (isAbsorbing || _isRecentlyHit) return;
+        if (IsAbsorbing || _isRecentlyHit) return;
 
         StartHitCooldown();
         currentVelocity = hitDirection.normalized * force;
     }
 
-    /// <summary>
-    /// 在 FixedUpdate 中呼叫，主動檢查並觸發與其他垃圾的碰撞
-    /// </summary>
     private void HandleTrashCollisions()
     {
-        Collider2D[] nearbyColliders = Physics2D.OverlapCircleAll(transform.position, collisionCheckRadius, trashLayerMask);
+        // 優化關鍵：只向 SpatialGridManager 拿附近的垃圾
+        List<BaseTrash> potentialCollisions = SpatialGridManager.Instance.GetNearbyTrash(this);
 
-        foreach (var collider in nearbyColliders)
+        float checkRadiusSqr = (collisionCheckRadius * 2) * (collisionCheckRadius * 2); // 預先計算半徑和的平方
+
+        foreach (var otherTrash in potentialCollisions)
         {
-            if (collider.gameObject == this.gameObject)
+            if (otherTrash == this) continue;
+
+            // 使用 sqrMagnitude 取代 Distance 以優化效能
+            float distSqr = (this.transform.position - otherTrash.transform.position).sqrMagnitude;
+
+            if (distSqr < checkRadiusSqr)
             {
-                continue;
-            }
-
-            BaseTrash otherTrash = collider.GetComponent<BaseTrash>();
-
-            if (otherTrash != null && !otherTrash._isRecentlyHit)
-            {
-                Vector2 hitDirection = (otherTrash.transform.position - this.transform.position).normalized;
-
-                if (hitDirection == Vector2.zero)
+                if (!otherTrash._isRecentlyHit)
                 {
-                    hitDirection = Random.insideUnitCircle.normalized;
+                    Vector2 hitDirection = (otherTrash.transform.position - this.transform.position).normalized;
+                    if (hitDirection == Vector2.zero) hitDirection = Random.insideUnitCircle.normalized;
+
+                    otherTrash.ApplyBroomHit(hitDirection);
+                    currentVelocity = -hitDirection * currentVelocity.magnitude; // 簡單的反作用力
+                    StartHitCooldown();
+                    return;
                 }
-
-                otherTrash.ApplyBroomHit(hitDirection);
-                currentVelocity = -hitDirection * currentVelocity.magnitude;
-                StartHitCooldown();
-
-                return; // 成功判斷一次撞擊就退出
             }
-        }
-    }
-
-    /// <summary>
-    /// 在 FixedUpdate 中呼叫，主動檢查是否進入黑洞範圍
-    /// </summary>
-    private void HandleBlackHoleCheck()
-    {
-        if (isAbsorbing) return;
-
-        Collider2D[] nearbyColliders = Physics2D.OverlapCircleAll(transform.position, blackHoleCheckRadius, blackHoleLayerMask);
-
-        if (nearbyColliders.Length > 0)
-        {
-            Collider2D blackHoleCollider = nearbyColliders[0];
-            OnEnterBlackHole(blackHoleCollider.transform.position);
         }
     }
 
@@ -214,11 +184,14 @@ public class BaseTrash : BasePoolItem
         _hitCooldownCoroutine = null;
     }
 
-    protected virtual void OnEnterBlackHole(Vector3 targetPosition)
+    /// <summary>
+    /// 被 BalckObstacle 主動呼叫。
+    /// </summary>
+    public void OnEnterBlackHole(Vector3 targetPosition)
     {
-        if (!isAbsorbing)
+        if (!IsAbsorbing)
         {
-            isAbsorbing = true;
+            IsAbsorbing = true;
             currentVelocity = Vector2.zero; // 停止手動物理
             StartCoroutine(AbsorbEffect(targetPosition));
         }
@@ -238,23 +211,24 @@ public class BaseTrash : BasePoolItem
 
             transform.Rotate(0f, 0f, rotationSpeed * Time.deltaTime);
             transform.localScale = Vector3.LerpUnclamped(initialScale, Vector3.zero, scale_t);
+
+            
             transform.position = Vector2.LerpUnclamped(initialPosition, target, move_t);
 
             yield return null;
         }
 
-        isAbsorbing = false;
+        IsAbsorbing = false;
         ResetState();
         TrashPool.Instance.ReturnTrash(this);
     }
-
 
     public override void ResetState()
     {
         base.ResetState();
 
         currentVelocity = Vector2.zero;
-        isAbsorbing = false;
+        IsAbsorbing = false;
 
         transform.localScale = initialScale;
 

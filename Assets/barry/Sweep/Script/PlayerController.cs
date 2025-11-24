@@ -3,167 +3,118 @@ using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour
 {
-    public static PlayerController instance;
+    private Camera cam;
+    private PlayerInput input;
+    private Rigidbody2D rb;
 
-    private Vector2 startMousePosition;
-    private Vector2 endMousePosition;
-    private Camera mainCamera;
-    
-    Vector2 nextPos;
-    Vector3 vp;
-    public Vector2 NormalizedDirection { get; private set; }
-    private PlayerInput playerInput;
-    private Vector2 currentPointerPosition;
+    private Vector2 dragStart;
+    private Vector2 moveDir;
 
+    private float currentSpeed;
+    public float maxSpeed = 12f;
+    public float deceleration = 8f;
+    public bool isBlocking = false;
 
-    public float moveSpeed;
-    public Rigidbody2D rb;
-    private Vector2 moveDirection;
-    private bool isMoving = false;
-
-    public float sweepRadius ; 
-    public LayerMask trashLayer; 
+    [Header("Sweep")]
+    public float sweepRadius = 1f;
     public Vector2 sweepOffset;
-    Vector2 sweepCenter ;
-
-
-    Collider2D[] hits;
+    public LayerMask trashLayer;
 
     private void Awake()
     {
-
-
-        if (instance == null)
-        {
-            instance = this;
-
-        }
-        else
-        {
-            Destroy(gameObject);
-            return;
-        }
+        cam = Camera.main;
+        input = GetComponent<PlayerInput>();
         rb = GetComponent<Rigidbody2D>();
-        playerInput = GetComponent<PlayerInput>();
-        if (playerInput == null)
-        {
-            Debug.LogError("PlayerController 找不到 PlayerInput 元件！", this);
-        }
     }
-    private void Start()
-    {
-        mainCamera = Camera.main;
-        transform.position = new Vector3(-5, 0, 0);
-    }
+
     private void OnEnable()
     {
-
-        playerInput.actions["PointerPress"].started += OnPointerPressStarted;
-        playerInput.actions["PointerPress"].canceled += OnPointerPressCanceled;
-        playerInput.actions["PointerPosition"].performed += OnPointerPosition;
+        input.actions["PointerPress"].started += OnPress;
+        input.actions["PointerPress"].canceled += OnRelease;
     }
 
     private void OnDisable()
     {
-
-        if (playerInput != null)
-        {
-            playerInput.actions["PointerPress"].started -= OnPointerPressStarted;
-            playerInput.actions["PointerPress"].canceled -= OnPointerPressCanceled;
-            playerInput.actions["PointerPosition"].performed -= OnPointerPosition;
-        }
+        input.actions["PointerPress"].started -= OnPress;
+        input.actions["PointerPress"].canceled -= OnRelease;
     }
 
-
-    private void OnPointerPressStarted(InputAction.CallbackContext context)
+    private void OnPress(InputAction.CallbackContext ctx)
     {
-
-        if (rb != null)
-        {
-            rb.linearVelocity = Vector2.zero;
-
-        }
-        startMousePosition = GetWorldMousePosition();
+        dragStart = ScreenToWorld(Input.mousePosition);
+        currentSpeed = 0f;               // 拖曳中停止慣性
+        rb.linearVelocity = Vector2.zero;
     }
 
-    private void OnPointerPressCanceled(InputAction.CallbackContext context)
+    private void OnRelease(InputAction.CallbackContext ctx)
     {
-        endMousePosition = GetWorldMousePosition();
-      
-        NormalizedDirection = (endMousePosition - startMousePosition).normalized;
+        Vector2 dragEnd = ScreenToWorld(Input.mousePosition);
+        Vector2 drag = dragEnd - dragStart;
 
+        if (drag.magnitude < 0.05f)
+            return; // 拖曳太短 → 不移動
 
-        if (NormalizedDirection != Vector2.zero) 
-        {
-            moveDirection = NormalizedDirection;
-            isMoving = true;
-        }
+        moveDir = drag.normalized;
 
-
+        // 初速度 = 拖曳長度（限制最大速度）
+        currentSpeed = Mathf.Min(drag.magnitude * 3f, maxSpeed);
     }
-    public void OnPointerPosition(InputAction.CallbackContext context)
-    {
 
-        currentPointerPosition = context.ReadValue<Vector2>();
-    }
-    private Vector2 GetWorldMousePosition()
+    private Vector2 ScreenToWorld(Vector2 screenPos)
     {
-        return mainCamera.ScreenToWorldPoint(
-                new Vector3(currentPointerPosition.x, currentPointerPosition.y, 10));
+        return cam.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, 10));
     }
 
     private void FixedUpdate()
     {
-  
-        HandleMove();
-    }
-    private void HandleMove()
-    {
-        if (!isMoving)
-            return;
-
-        Sweep();
-        nextPos = rb.position + moveDirection * moveSpeed * Time.fixedDeltaTime;
-
-        vp = mainCamera.WorldToViewportPoint(nextPos);
-
-     
-        if (vp.x < 0f || vp.x > 1f || vp.y < 0.1f || vp.y > 1f)
+        if (isBlocking)
         {
-            isMoving = false;
             rb.linearVelocity = Vector2.zero;
-            Debug.Log("超出區域，停止移動");
             return;
         }
 
-        
-        rb.linearVelocity = moveDirection * moveSpeed;
-    }
-    void Sweep()
-    {
-      
-         sweepCenter = (Vector2)transform.position + sweepOffset;
-
-    
-        hits = Physics2D.OverlapCircleAll(sweepCenter, sweepRadius, trashLayer);
-
-        foreach (Collider2D hit in hits)
+        if (currentSpeed > 0.01f)
         {
-            BaseTrash trash = hit.GetComponent<BaseTrash>();
-            if (trash != null)
-            {
-                
-                Vector2 direction = moveDirection;
+            // ✅ 先預測下一幀位置，用來做邊界檢查
+            Vector2 nextPos = rb.position + moveDir * currentSpeed * Time.fixedDeltaTime;
+            Vector3 vp = cam.WorldToViewportPoint(nextPos);
 
-          
-                trash.ApplyBroomHit(direction);
+            // ✅ 超出視窗範圍就直接停下來
+            if (vp.x < 0f || vp.x > 1f || vp.y < 0.1f || vp.y > 1f)
+            {
+                currentSpeed = 0f;
+                rb.linearVelocity = Vector2.zero;
+                return;
             }
+
+            // 真正移動
+            rb.linearVelocity = moveDir * currentSpeed;
+
+            // 慣性減速
+            currentSpeed -= deceleration * Time.fixedDeltaTime;
+            if (currentSpeed < 0f) currentSpeed = 0f;
+
+            Sweep();
+        }
+        else
+        {
+            rb.linearVelocity = Vector2.zero;
         }
     }
+
+    private void Sweep()
+    {
+        Vector2 center = (Vector2)transform.position + sweepOffset;
+
+        var hits = Physics2D.OverlapCircleAll(center, sweepRadius, trashLayer);
+
+        foreach (var hit in hits)
+            hit.GetComponent<BaseTrash>()?.ApplyBroomHit(moveDir);
+    }
+
     private void OnDrawGizmosSelected()
-    {     
-        Gizmos.color = Color.yellow;       
-        Vector2 gizmoCenter = (Vector2)transform.position + sweepOffset;      
-        Gizmos.DrawWireSphere(gizmoCenter, sweepRadius);
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere((Vector2)transform.position + sweepOffset, sweepRadius);
     }
 }

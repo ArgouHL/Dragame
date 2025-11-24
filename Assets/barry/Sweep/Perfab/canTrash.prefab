@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 6528140690148390313}
   - component: {fileID: 8780116405143948770}
   - component: {fileID: 7584989986373816456}
-  m_Layer: 3
+  m_Layer: 8
   m_Name: canTrash
   m_TagString: trash
   m_Icon: {fileID: 0}
@@ -201,11 +201,11 @@ MonoBehaviour:
   trashType: 1
   deceleration: 5
   viewportPadding: 0.1
-  force: 40
-  collisionCheckRadius: 0.5
+  force: 20
+  collisionCheckRadius: 0.7
   trashLayerMask:
     serializedVersion: 2
-    m_Bits: 8
+    m_Bits: 256
   hitCooldown: 0.2
   blackHoleCheckRadius: 0.5
   blackHoleLayerMask:

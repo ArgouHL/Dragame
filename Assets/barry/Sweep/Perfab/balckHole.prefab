@@ -139,3 +139,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   initialScale: {x: 1, y: 1, z: 1}
   obstacleType: 0
+  absorbRadius: 1.5

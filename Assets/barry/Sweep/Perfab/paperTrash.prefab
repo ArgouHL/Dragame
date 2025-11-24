@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 7367630615107844001}
   - component: {fileID: 873219786591372272}
   - component: {fileID: 7500339618046040888}
-  m_Layer: 3
+  m_Layer: 8
   m_Name: paperTrash
   m_TagString: trash
   m_Icon: {fileID: 0}
@@ -191,11 +191,11 @@ MonoBehaviour:
   trashType: 2
   deceleration: 5
   viewportPadding: 0.1
-  force: 60
-  collisionCheckRadius: 0.4
+  force: 30
+  collisionCheckRadius: 0.6
   trashLayerMask:
     serializedVersion: 2
-    m_Bits: 8
+    m_Bits: 256
   hitCooldown: 0.2
   blackHoleCheckRadius: 0.4
   blackHoleLayerMask:

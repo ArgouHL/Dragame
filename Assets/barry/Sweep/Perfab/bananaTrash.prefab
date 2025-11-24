@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 5545934319942313462}
   - component: {fileID: 7043373074332820194}
   - component: {fileID: 1208270454851290344}
-  m_Layer: 3
+  m_Layer: 8
   m_Name: bananaTrash
   m_TagString: trash
   m_Icon: {fileID: 0}
@@ -192,11 +192,11 @@ MonoBehaviour:
   trashType: 0
   deceleration: 5
   viewportPadding: 0.1
-  force: 32
-  collisionCheckRadius: 0.5
+  force: 16
+  collisionCheckRadius: 0.7
   trashLayerMask:
     serializedVersion: 2
-    m_Bits: 8
+    m_Bits: 256
   hitCooldown: 0.2
   blackHoleCheckRadius: 0.5
   blackHoleLayerMask:

@@ -11,7 +11,7 @@ public class BasePoolEntry<TKey, TValue>
 public abstract class BasePool<TKey, TValue> : MonoBehaviour where TValue : Component
 {
     [SerializeField]
-    private itemData item; // 唯一參照
+    private ItemData item; // 唯一參照
 
     // 緩存池主體
     protected Dictionary<TKey, Queue<TValue>> poolDict = new Dictionary<TKey, Queue<TValue>>();
@@ -22,6 +22,8 @@ public abstract class BasePool<TKey, TValue> : MonoBehaviour where TValue : Comp
     // 所有未使用物件的父節點
     public Transform poolParent;
 
+
+  
 
     protected void InitializePool(IEnumerable<BasePoolEntry<TKey, TValue>> entries)
     {

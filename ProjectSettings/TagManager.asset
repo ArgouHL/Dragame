@@ -4,20 +4,19 @@
 TagManager:
   serializedVersion: 3
   tags:
-  - player
-  - blackHole
   - trash
-  - airWall
+  - blackHole
+  - player
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - trashLayer
+  - 
   - Water
   - UI
-  - Player
-  - BlackHole
   - 
+  - blackhole
+  - trash
   - 
   - 
   - 

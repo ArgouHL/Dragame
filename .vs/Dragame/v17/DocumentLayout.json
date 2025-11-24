@@ -1,0 +1,37 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Fork\\Dragame\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|c:\\fork\\dragame\\assets\\barry\\sweep\\script\\playercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|solutionrelative:assets\\barry\\sweep\\script\\playercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "PlayerController.cs",
+              "DocumentMoniker": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\PlayerController.cs",
+              "RelativeDocumentMoniker": "Assets\\barry\\Sweep\\Script\\PlayerController.cs",
+              "ToolTip": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\PlayerController.cs",
+              "RelativeToolTip": "Assets\\barry\\Sweep\\Script\\PlayerController.cs",
+              "ViewState": "AgIAAFQAAAAAAAAAAAAswHgAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-24T15:06:11.597Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
