@@ -64,6 +64,7 @@
     <Compile Include="Assets\barry\Sweep\Script\SpatialGridManager.cs" />
     <Compile Include="Assets\barry\Sweep\Script\PreloadConfigSO.cs" />
     <Compile Include="Assets\barry\Sweep\Script\DynamicSpawnManager.cs" />
+    <Compile Include="Assets\barry\Sweep\Script\DragLine.cs" />
     <Compile Include="Assets\barry\Sweep\Script\BasePoolItem.cs" />
     <Compile Include="Assets\barry\Sweep\Script\BasePool.cs" />
     <Compile Include="Assets\barry\Sweep\Script\TrashPool.cs" />

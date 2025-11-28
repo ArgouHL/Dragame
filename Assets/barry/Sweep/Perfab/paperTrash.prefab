@@ -191,13 +191,7 @@ MonoBehaviour:
   trashType: 2
   deceleration: 5
   viewportPadding: 0.1
-  force: 30
+  broomForce: 30
+  trashForce: 15
   collisionCheckRadius: 0.6
-  trashLayerMask:
-    serializedVersion: 2
-    m_Bits: 256
   hitCooldown: 0.2
-  blackHoleCheckRadius: 0.4
-  blackHoleLayerMask:
-    serializedVersion: 2
-    m_Bits: 128

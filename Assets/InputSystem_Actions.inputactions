@@ -104,6 +104,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
+                },
+                {
+                    "name": "RightPointerPress",
+                    "type": "Button",
+                    "id": "5d09e1af-c6aa-4a7d-bcb1-53eaa04e7e20",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -495,10 +504,10 @@
                 {
                     "name": "",
                     "id": "242c44f9-f6a6-4c61-a5b3-a3bce33e4468",
-                    "path": "<Mouse>/press",
+                    "path": "<Mouse>/leftButton",
                     "interactions": "",
                     "processors": "",
-                    "groups": "",
+                    "groups": ";Keyboard&Mouse",
                     "action": "PointerPress",
                     "isComposite": false,
                     "isPartOfComposite": false
@@ -509,8 +518,19 @@
                     "path": "<Pointer>/position",
                     "interactions": "",
                     "processors": "",
-                    "groups": "",
+                    "groups": ";Keyboard&Mouse",
                     "action": "PointerPosition",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "1ecad197-e0ff-41b7-9115-1cdb8ea4033b",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "RightPointerPress",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

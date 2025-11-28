@@ -29,7 +29,11 @@ public class BaseTrash : BasePoolItem
     [Tooltip("視口邊界的緩衝區 (0.1 = 離邊緣 10% 的地方反彈)")]
     [SerializeField] private float viewportPadding;
 
-    [SerializeField] private float force;
+    // 玩家掃把給的力道
+    [SerializeField] private float broomForce;
+
+    // 垃圾互撞給的力道
+    [SerializeField] private float trashForce;
 
     [Header("連鎖碰撞設定")]
     [Tooltip("檢查其他垃圾的半徑")]
@@ -37,6 +41,9 @@ public class BaseTrash : BasePoolItem
 
     [Tooltip("被擊中後的冷卻時間(秒)，防止重複觸發")]
     [SerializeField] private float hitCooldown;
+
+    [Tooltip("垃圾互撞後保留多少速度（0~1，越小越快慢下來）")]
+    [SerializeField] private float collisionDamping = 0.6f;
 
     // 公開屬性：是否正在被吸入 (由 SpatialGridManager 和 BalckObstacle 讀取)
     public bool IsAbsorbing { get; private set; } = false;
@@ -125,17 +132,44 @@ public class BaseTrash : BasePoolItem
         }
     }
 
-    /// <summary>
-    /// 外部呼叫，對此垃圾施加一個力 (例如被掃把擊中)
-    /// </summary>
     public void ApplyBroomHit(Vector2 hitDirection)
     {
         if (IsAbsorbing || _isRecentlyHit) return;
 
         StartHitCooldown();
-        currentVelocity = hitDirection.normalized * force;
+        currentVelocity = hitDirection.normalized * broomForce;
     }
 
+    public void ApplyBroomHit(Vector2 hitDirection, float power)
+    {
+        if (IsAbsorbing || _isRecentlyHit) return;
+
+        StartHitCooldown();
+        currentVelocity = hitDirection.normalized * broomForce * power;
+    }
+
+    /// <summary>
+    /// 垃圾互撞受到的推力：改成「加速度 + 阻尼」
+    /// </summary>
+    public void ApplyTrashHit(Vector2 hitDirection)
+    {
+        if (IsAbsorbing || _isRecentlyHit) return;
+
+        StartHitCooldown();
+
+        // 撞擊衝量：方向 * 力道
+        Vector2 impulse = hitDirection.normalized * trashForce;
+
+        // 加上去，而不是重設
+        currentVelocity += impulse;
+
+        // 撞擊造成能量損失，讓垃圾不會越撞越快
+        currentVelocity *= collisionDamping;
+    }
+
+    /// <summary>
+    /// 處理垃圾與垃圾之間的連鎖碰撞
+    /// </summary>
     private void HandleTrashCollisions()
     {
         // 優化關鍵：只向 SpatialGridManager 拿附近的垃圾
@@ -157,8 +191,14 @@ public class BaseTrash : BasePoolItem
                     Vector2 hitDirection = (otherTrash.transform.position - this.transform.position).normalized;
                     if (hitDirection == Vector2.zero) hitDirection = Random.insideUnitCircle.normalized;
 
-                    otherTrash.ApplyBroomHit(hitDirection);
-                    currentVelocity = -hitDirection * currentVelocity.magnitude; // 簡單的反作用力
+                    // 對方被推開（加速度 + 阻尼）
+                    otherTrash.ApplyTrashHit(hitDirection);
+
+                    // 自己也受到反作用力
+                    Vector2 selfImpulse = -hitDirection * trashForce;
+                    currentVelocity += selfImpulse;
+                    currentVelocity *= collisionDamping;
+
                     StartHitCooldown();
                     return;
                 }
@@ -212,7 +252,6 @@ public class BaseTrash : BasePoolItem
             transform.Rotate(0f, 0f, rotationSpeed * Time.deltaTime);
             transform.localScale = Vector3.LerpUnclamped(initialScale, Vector3.zero, scale_t);
 
-            
             transform.position = Vector2.LerpUnclamped(initialPosition, target, move_t);
 
             yield return null;

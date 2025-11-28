@@ -52,7 +52,7 @@ public class LevelSpawner : MonoBehaviour
     [Header("垃圾生成安全距離")]
     [Tooltip("生成垃圾時，離其他物件的最小安全距離")]
     [SerializeField]
-    private float minSafeDistance = 1.5f;
+    public float minSafeDistance ;
 
     [Tooltip("生成位置的重試次數上限，防止因空間不足導致無限迴圈")]
     [SerializeField]
@@ -118,10 +118,7 @@ public class LevelSpawner : MonoBehaviour
         return false;
     }
 
-    /// <summary>
-    /// 如果你想手動指定位置生成，也可以用這個。
-    /// 會幫你檢查安全距離。
-    /// </summary>
+   
     public bool TrySpawnTrashAtPosition(TrashType type, Vector3 position)
     {
         if (!IsValidSpawnPosition(position))
@@ -207,7 +204,7 @@ public class LevelSpawner : MonoBehaviour
         }
     }
 
-    private bool IsValidSpawnPosition(Vector3 targetPos)
+    public bool IsValidSpawnPosition(Vector3 targetPos)
     {
         foreach (Vector3 occupiedPos in allOccupiedPositions)
         {
