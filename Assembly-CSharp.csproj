@@ -76,6 +76,7 @@
     <Compile Include="Assets\TutorialInfo\Scripts\Readme.cs" />
     <Compile Include="Assets\barry\Sweep\Script\BlackObstacle.cs" />
     <Compile Include="Assets\barry\Sweep\Script\PlayerController.cs" />
+    <Compile Include="Assets\barry\Sweep\Script\DynamicSweepMesh.cs" />
     <Compile Include="Assets\barry\Sweep\Script\BaseObstacle.cs" />
     <Compile Include="Assets\barry\Sweep\Script\PaperTrash.cs" />
     <Compile Include="Assets\barry\Sweep\Script\CanTrash.cs" />
@@ -1220,6 +1221,10 @@
     </Reference>
     <Reference Include="Unity.VisualScripting.State">
       <HintPath>Library\ScriptAssemblies\Unity.VisualScripting.State.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.2D.Sprite.Editor">
+      <HintPath>Library\ScriptAssemblies\Unity.2D.Sprite.Editor.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.AI.Navigation.Editor.ConversionSystem">

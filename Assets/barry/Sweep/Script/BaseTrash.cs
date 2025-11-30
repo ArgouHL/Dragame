@@ -2,10 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// 管理「垃圾」物件的行為，包含手動物理、連鎖碰撞和被黑洞吸收。
-/// 繼承自 BasePoolItem 以支援物件池。
-/// </summary>
 public class BaseTrash : BasePoolItem
 {
     [SerializeField] protected float absorbEffectDuration;
@@ -21,36 +17,50 @@ public class BaseTrash : BasePoolItem
 
     [Header("手動物理設定")]
     [Tooltip("垃圾的當前速度")]
-    private Vector2 currentVelocity;
+    [SerializeField] private Vector2 currentVelocity;
 
     [Tooltip("每秒速度衰減的百分比 (例如 5 = 每秒衰減 500% 的速度)")]
-    [SerializeField] private float deceleration;
+    [SerializeField] private float deceleration = 5f;
 
     [Tooltip("視口邊界的緩衝區 (0.1 = 離邊緣 10% 的地方反彈)")]
-    [SerializeField] private float viewportPadding;
+    [SerializeField] private float viewportPadding = 0.05f;
 
-    // 玩家掃把給的力道
-    [SerializeField] private float broomForce;
+    [Tooltip("玩家掃把給的力道")]
+    [SerializeField] private float broomForce = 10f;
 
-    // 垃圾互撞給的力道
-    [SerializeField] private float trashForce;
+    [Tooltip("垃圾互撞給的力道")]
+    [SerializeField] private float trashForce = 3f;
 
     [Header("連鎖碰撞設定")]
     [Tooltip("檢查其他垃圾的半徑")]
-    [SerializeField] private float collisionCheckRadius;
+    [SerializeField] private float collisionCheckRadius = 0.5f;
 
     [Tooltip("被擊中後的冷卻時間(秒)，防止重複觸發")]
-    [SerializeField] private float hitCooldown;
+    [SerializeField] private float hitCooldown = 0.05f;
 
     [Tooltip("垃圾互撞後保留多少速度（0~1，越小越快慢下來）")]
     [SerializeField] private float collisionDamping = 0.6f;
 
-    // 公開屬性：是否正在被吸入 (由 SpatialGridManager 和 BalckObstacle 讀取)
+    [Tooltip("觸發碰撞所需的最小相對速度")]
+    [SerializeField] private float minCollisionSpeed = 0.4f;
+
+    [Header("睡眠（停止運算）設定")]
+    [Tooltip("低於這個速度就開始計算睡眠時間")]
+    [SerializeField] private float sleepSpeedThreshold = 0.1f;
+
+    [Tooltip("速度持續低於門檻多久就進入睡眠狀態")]
+    [SerializeField] private float sleepTime = 1.0f;
+
     public bool IsAbsorbing { get; private set; } = false;
+
+    public Vector2 CurrentVelocity => currentVelocity;
 
     private Camera mainCamera;
     private bool _isRecentlyHit = false;
     private Coroutine _hitCooldownCoroutine;
+
+    private bool _isSleeping = false;
+    private float _sleepTimer = 0f;
 
     protected virtual void Awake()
     {
@@ -60,31 +70,26 @@ public class BaseTrash : BasePoolItem
 
     protected virtual void FixedUpdate()
     {
-        // 如果正在被吸入，完全停止物理與碰撞邏輯
         if (IsAbsorbing) return;
+        if (_isSleeping) return;
 
-        // 1. 處理垃圾與垃圾的碰撞 (使用 Grid)
-        if (currentVelocity.magnitude > 0.01f && !_isRecentlyHit)
+        if (currentVelocity.sqrMagnitude > 0.0001f && !_isRecentlyHit)
         {
             HandleTrashCollisions();
         }
 
-        // 2. 處理移動與邊界
         HandleMovement();
         HandleBoundaryCheck();
+        HandleSleepCheck();
     }
 
-    /// <summary>
-    /// 處理移動和速度衰減
-    /// </summary>
     private void HandleMovement()
     {
-        if (currentVelocity.magnitude == 0) return;
+        if (currentVelocity == Vector2.zero) return;
 
-        // 速度衰減 (模擬摩擦力)
         currentVelocity = Vector2.Lerp(currentVelocity, Vector2.zero, deceleration * Time.fixedDeltaTime);
 
-        if (currentVelocity.magnitude < 0.01f)
+        if (currentVelocity.magnitude < 0.001f)
         {
             currentVelocity = Vector2.zero;
             return;
@@ -93,11 +98,35 @@ public class BaseTrash : BasePoolItem
         transform.position += (Vector3)currentVelocity * Time.fixedDeltaTime;
     }
 
-    /// <summary>
-    /// 處理視口邊界檢查與反彈
-    /// </summary>
+    private void HandleSleepCheck()
+    {
+        float speed = currentVelocity.magnitude;
+
+        if (speed < sleepSpeedThreshold && speed > 0f)
+        {
+            _sleepTimer += Time.fixedDeltaTime;
+            if (_sleepTimer >= sleepTime)
+            {
+                currentVelocity = Vector2.zero;
+                _isSleeping = true;
+            }
+        }
+        else
+        {
+            _sleepTimer = 0f;
+        }
+    }
+
+    private void WakeUp()
+    {
+        _isSleeping = false;
+        _sleepTimer = 0f;
+    }
+
     private void HandleBoundaryCheck()
     {
+        if (mainCamera == null) return;
+
         Vector3 vp = mainCamera.WorldToViewportPoint(transform.position);
         bool bounceX = false;
         bool bounceY = false;
@@ -134,74 +163,69 @@ public class BaseTrash : BasePoolItem
 
     public void ApplyBroomHit(Vector2 hitDirection)
     {
-        if (IsAbsorbing || _isRecentlyHit) return;
+        if (IsAbsorbing) return;
 
+        WakeUp();
         StartHitCooldown();
         currentVelocity = hitDirection.normalized * broomForce;
     }
 
     public void ApplyBroomHit(Vector2 hitDirection, float power)
     {
-        if (IsAbsorbing || _isRecentlyHit) return;
+        if (IsAbsorbing) return;
 
+        WakeUp();
         StartHitCooldown();
         currentVelocity = hitDirection.normalized * broomForce * power;
     }
 
-    /// <summary>
-    /// 垃圾互撞受到的推力：改成「加速度 + 阻尼」
-    /// </summary>
     public void ApplyTrashHit(Vector2 hitDirection)
     {
-        if (IsAbsorbing || _isRecentlyHit) return;
+        if (IsAbsorbing) return;
 
+        WakeUp();
         StartHitCooldown();
 
-        // 撞擊衝量：方向 * 力道
         Vector2 impulse = hitDirection.normalized * trashForce;
-
-        // 加上去，而不是重設
         currentVelocity += impulse;
-
-        // 撞擊造成能量損失，讓垃圾不會越撞越快
         currentVelocity *= collisionDamping;
     }
 
-    /// <summary>
-    /// 處理垃圾與垃圾之間的連鎖碰撞
-    /// </summary>
     private void HandleTrashCollisions()
     {
-        // 優化關鍵：只向 SpatialGridManager 拿附近的垃圾
         List<BaseTrash> potentialCollisions = SpatialGridManager.Instance.GetNearbyTrash(this);
 
-        float checkRadiusSqr = (collisionCheckRadius * 2) * (collisionCheckRadius * 2); // 預先計算半徑和的平方
+        float checkRadiusSqr = collisionCheckRadius * collisionCheckRadius;
+        Vector2 selfPos = transform.position;
 
         foreach (var otherTrash in potentialCollisions)
         {
-            if (otherTrash == this) continue;
+            if (otherTrash == null || otherTrash == this) continue;
+            if (otherTrash.IsAbsorbing) continue;
 
-            // 使用 sqrMagnitude 取代 Distance 以優化效能
-            float distSqr = (this.transform.position - otherTrash.transform.position).sqrMagnitude;
+            Vector2 otherPos = otherTrash.transform.position;
+            float distSqr = (selfPos - otherPos).sqrMagnitude;
 
-            if (distSqr < checkRadiusSqr)
+            if (distSqr > checkRadiusSqr) continue;
+
+            Vector2 relativeVel = currentVelocity - otherTrash.CurrentVelocity;
+            if (relativeVel.sqrMagnitude < minCollisionSpeed * minCollisionSpeed)
+                continue;
+
+            if (!otherTrash._isRecentlyHit)
             {
-                if (!otherTrash._isRecentlyHit)
-                {
-                    Vector2 hitDirection = (otherTrash.transform.position - this.transform.position).normalized;
-                    if (hitDirection == Vector2.zero) hitDirection = Random.insideUnitCircle.normalized;
+                Vector2 hitDirection = (otherPos - selfPos).normalized;
+                if (hitDirection == Vector2.zero)
+                    hitDirection = Random.insideUnitCircle.normalized;
 
-                    // 對方被推開（加速度 + 阻尼）
-                    otherTrash.ApplyTrashHit(hitDirection);
+                otherTrash.ApplyTrashHit(hitDirection);
 
-                    // 自己也受到反作用力
-                    Vector2 selfImpulse = -hitDirection * trashForce;
-                    currentVelocity += selfImpulse;
-                    currentVelocity *= collisionDamping;
+                Vector2 selfImpulse = -hitDirection * trashForce;
+                currentVelocity += selfImpulse;
+                currentVelocity *= collisionDamping;
 
-                    StartHitCooldown();
-                    return;
-                }
+                StartHitCooldown();
+                return;
             }
         }
     }
@@ -209,7 +233,6 @@ public class BaseTrash : BasePoolItem
     private void StartHitCooldown()
     {
         _isRecentlyHit = true;
-        // 如果上一個冷卻協程還在跑，先停止它
         if (_hitCooldownCoroutine != null)
         {
             StopCoroutine(_hitCooldownCoroutine);
@@ -224,15 +247,13 @@ public class BaseTrash : BasePoolItem
         _hitCooldownCoroutine = null;
     }
 
-    /// <summary>
-    /// 被 BalckObstacle 主動呼叫。
-    /// </summary>
     public void OnEnterBlackHole(Vector3 targetPosition)
     {
         if (!IsAbsorbing)
         {
             IsAbsorbing = true;
-            currentVelocity = Vector2.zero; // 停止手動物理
+            _isSleeping = false;
+            currentVelocity = Vector2.zero;
             StartCoroutine(AbsorbEffect(targetPosition));
         }
     }
@@ -251,7 +272,6 @@ public class BaseTrash : BasePoolItem
 
             transform.Rotate(0f, 0f, rotationSpeed * Time.deltaTime);
             transform.localScale = Vector3.LerpUnclamped(initialScale, Vector3.zero, scale_t);
-
             transform.position = Vector2.LerpUnclamped(initialPosition, target, move_t);
 
             yield return null;
@@ -268,15 +288,16 @@ public class BaseTrash : BasePoolItem
 
         currentVelocity = Vector2.zero;
         IsAbsorbing = false;
-
         transform.localScale = initialScale;
 
-        // 重置冷卻狀態
         if (_hitCooldownCoroutine != null)
         {
             StopCoroutine(_hitCooldownCoroutine);
             _hitCooldownCoroutine = null;
         }
         _isRecentlyHit = false;
+
+        _isSleeping = false;
+        _sleepTimer = 0f;
     }
 }

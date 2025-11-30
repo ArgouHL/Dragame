@@ -189,9 +189,14 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   trashType: 2
+  currentVelocity: {x: 0, y: 0}
   deceleration: 5
   viewportPadding: 0.1
   broomForce: 30
   trashForce: 15
   collisionCheckRadius: 0.6
   hitCooldown: 0.2
+  collisionDamping: 0.6
+  minCollisionSpeed: 0.4
+  sleepSpeedThreshold: 0.2
+  sleepTime: 0.5
