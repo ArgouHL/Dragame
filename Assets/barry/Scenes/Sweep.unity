@@ -706,7 +706,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1576233026
 Transform:
   m_ObjectHideFlags: 0
@@ -736,6 +736,7 @@ GameObject:
   - component: {fileID: 1611628280}
   - component: {fileID: 1611628281}
   - component: {fileID: 1611628282}
+  - component: {fileID: 1611628283}
   m_Layer: 0
   m_Name: PlayerController
   m_TagString: player
@@ -833,17 +834,8 @@ MonoBehaviour:
   isBlocking: 0
   sweepRadius: 0.8
   sweepOffset: {x: 0.46, y: -1.18}
-  trashLayer:
-    serializedVersion: 2
-    m_Bits: 256
   maxChargeTime: 1.5
-  minSweepRadius: 1
-  maxChargedRadius: 4
-  minForceMultiplier: 1
-  maxForceMultiplier: 3
-  chargedSweepRoot: {fileID: 1576233026}
-  sweepMesh: {fileID: 1717785076}
-  sweepCollider: {fileID: 950991333}
+  chargeCenterOffset: 0
 --- !u!114 &1611628281
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -901,6 +893,26 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
+--- !u!114 &1611628283
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1611628276}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e527a7a401f84ad4596012760cfb3862, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  trashLayer:
+    serializedVersion: 2
+    m_Bits: 256
+  chargedSweepRoot: {fileID: 1576233026}
+  sweepMesh: {fileID: 1717785076}
+  sweepCollider: {fileID: 950991333}
+  minForceMultiplier: 1
+  maxForceMultiplier: 3
 --- !u!1 &1632655380
 GameObject:
   m_ObjectHideFlags: 0
@@ -980,13 +992,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 45aec110b16d60546a3cb61e1c24765c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  headWidth: 0.1
-  minLength: 1
-  maxLength: 4
-  tailMaxWidth: 10
-  tailSegments: 16
-  minArcAngle: 40
-  maxArcAngle: 180
+  minRadius: 0
+  maxRadius: 5
+  arcSegments: 20
+  minArcAngle: 10
+  maxArcAngle: 90
 --- !u!23 &1717785077
 MeshRenderer:
   m_ObjectHideFlags: 0

@@ -3,7 +3,15 @@
   "WorkspaceRootPath": "C:\\Fork\\Dragame\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|c:\\fork\\dragame\\assets\\barry\\sweep\\script\\playercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|c:\\fork\\dragame\\assets\\barry\\sweep\\script\\trash\\basetrash.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|solutionrelative:assets\\barry\\sweep\\script\\trash\\basetrash.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|c:\\fork\\dragame\\assets\\barry\\sweep\\script\\levelspawner.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|solutionrelative:assets\\barry\\sweep\\script\\levelspawner.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|C:\\Fork\\Dragame\\assets\\barry\\sweep\\script\\playercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|solutionrelative:assets\\barry\\sweep\\script\\playercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
@@ -15,20 +23,36 @@
       "RelativeMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|solutionrelative:assets\\barry\\sweep\\script\\dynamicspawnmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|C:\\Fork\\Dragame\\assets\\barry\\sweep\\script\\skillmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|solutionrelative:assets\\barry\\sweep\\script\\skillmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Fork\\Dragame\\Assets\\ReadMe.txt||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Assets\\ReadMe.txt||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\GenericObjectPool.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Assets\\barry\\Sweep\\Script\\GenericObjectPool.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|C:\\Fork\\Dragame\\assets\\barry\\sweep\\script\\obstaclepool.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|solutionrelative:assets\\barry\\sweep\\script\\obstaclepool.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|C:\\Fork\\Dragame\\assets\\barry\\sweep\\script\\spatialgridmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|solutionrelative:assets\\barry\\sweep\\script\\spatialgridmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|C:\\Fork\\Dragame\\assets\\barry\\sweep\\script\\baseobstacle.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|solutionrelative:assets\\barry\\sweep\\script\\baseobstacle.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|C:\\Fork\\Dragame\\assets\\barry\\sweep\\script\\dragline.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|solutionrelative:assets\\barry\\sweep\\script\\dragline.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|C:\\Fork\\Dragame\\assets\\barry\\sweep\\script\\basetrash.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|solutionrelative:assets\\barry\\sweep\\script\\basetrash.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|C:\\Fork\\Dragame\\assets\\barry\\sweep\\script\\levelspawner.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C00B6044-6580-4984-FD98-7659A0F10B53}|Assembly-CSharp.csproj|solutionrelative:assets\\barry\\sweep\\script\\levelspawner.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Fork\\Dragame\\assets\\barry\\sweep\\script\\levelmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:assets\\barry\\sweep\\script\\levelmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -38,24 +62,106 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 6,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
+              "Title": "BaseTrash.cs",
+              "DocumentMoniker": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\Trash\\BaseTrash.cs",
+              "RelativeDocumentMoniker": "Assets\\barry\\Sweep\\Script\\Trash\\BaseTrash.cs",
+              "ToolTip": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\Trash\\BaseTrash.cs",
+              "RelativeToolTip": "Assets\\barry\\Sweep\\Script\\Trash\\BaseTrash.cs",
+              "ViewState": "AgIAAAsBAAAAAAAAAAAowC8BAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-04T20:03:21.184Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "SkillManager.cs",
+              "DocumentMoniker": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\SkillManager.cs",
+              "RelativeDocumentMoniker": "Assets\\barry\\Sweep\\Script\\SkillManager.cs",
+              "ToolTip": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\SkillManager.cs",
+              "RelativeToolTip": "Assets\\barry\\Sweep\\Script\\SkillManager.cs",
+              "ViewState": "AgIAAFQAAAAAAAAAAAAowHgAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-04T19:35:39.908Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "ReadMe.txt",
+              "DocumentMoniker": "C:\\Fork\\Dragame\\Assets\\ReadMe.txt",
+              "RelativeDocumentMoniker": "Assets\\ReadMe.txt",
+              "ToolTip": "C:\\Fork\\Dragame\\Assets\\ReadMe.txt",
+              "RelativeToolTip": "Assets\\ReadMe.txt",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003109|",
+              "WhenOpened": "2025-12-04T18:05:32.114Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "GenericObjectPool.cs",
+              "DocumentMoniker": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\GenericObjectPool.cs",
+              "RelativeDocumentMoniker": "Assets\\barry\\Sweep\\Script\\GenericObjectPool.cs",
+              "ToolTip": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\GenericObjectPool.cs",
+              "RelativeToolTip": "Assets\\barry\\Sweep\\Script\\GenericObjectPool.cs",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-02T13:54:04.712Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "LevelManager.cs",
+              "DocumentMoniker": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\LevelManager.cs",
+              "RelativeDocumentMoniker": "Assets\\barry\\Sweep\\Script\\LevelManager.cs",
+              "ToolTip": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\LevelManager.cs",
+              "RelativeToolTip": "Assets\\barry\\Sweep\\Script\\LevelManager.cs",
+              "ViewState": "AgIAAC0AAAAAAAAAAAAAAA0AAAA9AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-02T13:53:53.773Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "ObstaclePool.cs",
+              "DocumentMoniker": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\ObstaclePool.cs",
+              "RelativeDocumentMoniker": "Assets\\barry\\Sweep\\Script\\ObstaclePool.cs",
+              "ToolTip": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\ObstaclePool.cs",
+              "RelativeToolTip": "Assets\\barry\\Sweep\\Script\\ObstaclePool.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAkAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-02T13:47:58.896Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "BaseObstacle.cs",
+              "DocumentMoniker": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\BaseObstacle.cs",
+              "RelativeDocumentMoniker": "Assets\\barry\\Sweep\\Script\\BaseObstacle.cs",
+              "ToolTip": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\BaseObstacle.cs",
+              "RelativeToolTip": "Assets\\barry\\Sweep\\Script\\BaseObstacle.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-02T13:47:32.621Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
               "Title": "DynamicSweepMesh.cs",
               "DocumentMoniker": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\DynamicSweepMesh.cs",
               "RelativeDocumentMoniker": "Assets\\barry\\Sweep\\Script\\DynamicSweepMesh.cs",
               "ToolTip": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\DynamicSweepMesh.cs",
               "RelativeToolTip": "Assets\\barry\\Sweep\\Script\\DynamicSweepMesh.cs",
-              "ViewState": "AgIAAD8AAAAAAAAAAAAIwGAAAAABAAAAAAAAAA==",
+              "ViewState": "AgIAADQAAAAAAAAAAAAowFgAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-30T02:34:51.519Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-30T02:34:51.519Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 11,
               "Title": "DragLine.cs",
               "DocumentMoniker": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\DragLine.cs",
               "RelativeDocumentMoniker": "Assets\\barry\\Sweep\\Script\\DragLine.cs",
@@ -67,64 +173,52 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 9,
               "Title": "SpatialGridManager.cs",
               "DocumentMoniker": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\SpatialGridManager.cs",
               "RelativeDocumentMoniker": "Assets\\barry\\Sweep\\Script\\SpatialGridManager.cs",
               "ToolTip": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\SpatialGridManager.cs",
               "RelativeToolTip": "Assets\\barry\\Sweep\\Script\\SpatialGridManager.cs",
-              "ViewState": "AgIAACUAAAAAAAAAAABAwAAAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAACYAAAAAAAAAAAAuwAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-11-28T04:24:40.382Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "BaseTrash.cs",
-              "DocumentMoniker": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\BaseTrash.cs",
-              "RelativeDocumentMoniker": "Assets\\barry\\Sweep\\Script\\BaseTrash.cs",
-              "ToolTip": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\BaseTrash.cs",
-              "RelativeToolTip": "Assets\\barry\\Sweep\\Script\\BaseTrash.cs",
-              "ViewState": "AgIAAA0BAAAAAAAAAAAiwC8BAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-28T04:22:36.772Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 4,
               "Title": "DynamicSpawnManager.cs",
               "DocumentMoniker": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\DynamicSpawnManager.cs",
               "RelativeDocumentMoniker": "Assets\\barry\\Sweep\\Script\\DynamicSpawnManager.cs",
               "ToolTip": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\DynamicSpawnManager.cs",
               "RelativeToolTip": "Assets\\barry\\Sweep\\Script\\DynamicSpawnManager.cs",
-              "ViewState": "AgIAAC4AAAAAAAAAAAAswG0AAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAEkAAAAAAAAAAAAowG0AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-11-25T08:10:39.924Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 1,
               "Title": "LevelSpawner.cs",
               "DocumentMoniker": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\LevelSpawner.cs",
               "RelativeDocumentMoniker": "Assets\\barry\\Sweep\\Script\\LevelSpawner.cs",
               "ToolTip": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\LevelSpawner.cs",
               "RelativeToolTip": "Assets\\barry\\Sweep\\Script\\LevelSpawner.cs",
-              "ViewState": "AgIAAL0AAAAAAAAAAAAAAM4AAAAKAAAAAAAAAA==",
+              "ViewState": "AgIAABYBAAAAAAAAAAAowDoBAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-25T08:09:35.954Z"
+              "WhenOpened": "2025-11-25T08:09:35.954Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 2,
               "Title": "PlayerController.cs",
               "DocumentMoniker": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\PlayerController.cs",
               "RelativeDocumentMoniker": "Assets\\barry\\Sweep\\Script\\PlayerController.cs",
               "ToolTip": "C:\\Fork\\Dragame\\Assets\\barry\\Sweep\\Script\\PlayerController.cs",
               "RelativeToolTip": "Assets\\barry\\Sweep\\Script\\PlayerController.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAMQAAAAAAAAAAAAowOgAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-24T15:06:11.597Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-24T15:06:11.597Z"
             }
           ]
         }
