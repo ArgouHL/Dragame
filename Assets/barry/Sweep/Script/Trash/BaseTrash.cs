@@ -1,107 +1,183 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class BaseTrash : BasePoolItem
 {
     [SerializeField] protected float absorbEffectDuration;
     [SerializeField] protected float rotationSpeed;
-
     [Header("縮小(消退)速率曲線")]
     [SerializeField] protected AnimationCurve scaleCurve;
-
     [Header("移動設定速率曲線")]
     [SerializeField] protected AnimationCurve moveCurve;
-
     [SerializeField] public TrashType trashType;
-
     [Header("手動物理設定")]
-    [Tooltip("垃圾的當前速度")]
     [SerializeField] private Vector2 currentVelocity;
-
-    [Tooltip("每秒速度衰減的百分比 (例如 5 = 每秒衰減 500% 的速度)")]
-    [SerializeField] private float deceleration = 5f;
-
-    [Tooltip("視口邊界的緩衝區 (0.1 = 離邊緣 10% 的地方反彈)")]
-    [SerializeField] private float viewportPadding = 0.05f;
-
-    [Tooltip("玩家掃把給的力道")]
-    [SerializeField] private float broomForce = 10f;
-
-    [Tooltip("垃圾互撞給的力道")]
-    [SerializeField] private float trashForce = 3f;
-
+    [SerializeField] private float deceleration;
+    [SerializeField] private float viewportPadding;
+    [SerializeField] private float broomForce;
+    [SerializeField] private float trashForce;
     [Header("連鎖碰撞設定")]
-    [Tooltip("檢查其他垃圾的半徑")]
-    [SerializeField] private float collisionCheckRadius = 0.5f;
-
-    [Tooltip("被擊中後的冷卻時間(秒)，防止重複觸發")]
-    [SerializeField] private float hitCooldown = 0.05f;
-
-    [Tooltip("垃圾互撞後保留多少速度（0~1，越小越快慢下來）")]
-    [SerializeField] private float collisionDamping = 0.6f;
-
-    [Tooltip("觸發碰撞所需的最小相對速度")]
-    [SerializeField] private float minCollisionSpeed = 0.4f;
-
+    [SerializeField] private float collisionCheckRadius;
+    [SerializeField] private float hitCooldown;
+    [SerializeField] private float collisionDamping;
+    [SerializeField] private float minCollisionSpeed;
     [Header("睡眠（停止運算）設定")]
-    [Tooltip("低於這個速度就開始計算睡眠時間")]
-    [SerializeField] private float sleepSpeedThreshold = 0.1f;
+    [SerializeField] private float sleepSpeedThreshold;
+    [SerializeField] private float sleepTime;
 
-    [Tooltip("速度持續低於門檻多久就進入睡眠狀態")]
-    [SerializeField] private float sleepTime = 1.0f;
-
-    public bool IsAbsorbing { get; private set; } = false;
-
+    public bool IsAbsorbing { get; private set; }
     public Vector2 CurrentVelocity => currentVelocity;
+    public float AbsorbEffectDuration => absorbEffectDuration;
+    public float RotationSpeed => rotationSpeed;
+    public AnimationCurve ScaleCurve => scaleCurve;
+    public AnimationCurve MoveCurve => moveCurve;
 
-    private Camera mainCamera;
-    private bool _isRecentlyHit = false;
-    private Coroutine _hitCooldownCoroutine;
-
-    private bool _isSleeping = false;
-    private float _sleepTimer = 0f;
-
-    protected virtual void Awake()
-    {
-        mainCamera = Camera.main;
-        initialScale = transform.localScale;
-    }
+    private bool _isRecentlyHit;
+    private float _hitCooldownTimer;
+    private bool _isSleeping;
+    private float _sleepTimer;
+    private readonly List<BaseTrash> _nearbyTrash = new List<BaseTrash>(32);
+    private Collider2D[] _colliders;
 
     protected virtual void FixedUpdate()
     {
-        if (IsAbsorbing) return;
-        if (_isSleeping) return;
+        if (IsAbsorbing || _isSleeping) return;
 
-        if (currentVelocity.sqrMagnitude > 0.0001f && !_isRecentlyHit)
+        if (_isRecentlyHit)
         {
-            HandleTrashCollisions();
+            _hitCooldownTimer -= Time.fixedDeltaTime;
+            _isRecentlyHit = _hitCooldownTimer > 0f;
         }
 
         HandleMovement();
-        HandleBoundaryCheck();
         HandleSleepCheck();
     }
 
     private void HandleMovement()
     {
-        if (currentVelocity == Vector2.zero) return;
-
-        currentVelocity = Vector2.Lerp(currentVelocity, Vector2.zero, deceleration * Time.fixedDeltaTime);
-
-        if (currentVelocity.magnitude < 0.001f)
+        if (currentVelocity.sqrMagnitude < 0.0001f)
         {
             currentVelocity = Vector2.zero;
             return;
         }
 
-        transform.position += (Vector3)currentVelocity * Time.fixedDeltaTime;
+        float remainingTime = Time.fixedDeltaTime;
+        float maxStepDist = collisionCheckRadius * 0.5f;
+        Vector2 currentPos = transform.position;
+
+        while (remainingTime > 0f)
+        {
+            float stepTime = remainingTime;
+            float speed = currentVelocity.magnitude;
+            if (speed <= 0f)
+            {
+                currentVelocity = Vector2.zero;
+                break;
+            }
+
+            Vector2 stepDelta = currentVelocity * stepTime;
+            float stepMag = stepDelta.magnitude;
+
+            if (stepMag > maxStepDist)
+            {
+                stepTime = maxStepDist / speed;
+                stepDelta = currentVelocity * stepTime;
+                stepMag = stepDelta.magnitude;
+            }
+
+            Vector2 targetPos = currentPos + stepDelta;
+            float moveDist = stepMag;
+            bool hasCollision = CheckPathCollision(currentPos, targetPos, ref moveDist, out BaseTrash hitTrash);
+
+            if (moveDist > 0f)
+            {
+                Vector2 actualDelta = currentVelocity.normalized * moveDist;
+                transform.position = currentPos + actualDelta;
+                currentPos = transform.position;
+            }
+
+            if (hasCollision && hitTrash != null && !hitTrash._isRecentlyHit)
+            {
+                Vector2 hitDir = (Vector2)(hitTrash.transform.position - transform.position);
+                if (hitDir.sqrMagnitude < 0.0001f) hitDir = Random.insideUnitCircle;
+                hitDir.Normalize();
+
+                hitTrash.ApplyTrashHit(hitDir);
+                Vector2 v = currentVelocity;
+                float proj = Vector2.Dot(v, hitDir);
+                v -= 2f * proj * hitDir;
+                currentVelocity = v * collisionDamping;
+
+                StartHitCooldownTimer();
+                hitTrash.StartHitCooldownTimer();
+            }
+
+            HandleBoundaryCheck();
+
+            currentVelocity = Vector2.Lerp(currentVelocity, Vector2.zero, deceleration * stepTime);
+            remainingTime -= stepTime;
+
+            if (currentVelocity.sqrMagnitude < 0.000001f)
+            {
+                currentVelocity = Vector2.zero;
+                break;
+            }
+        }
+    }
+
+    private bool CheckPathCollision(Vector2 start, Vector2 end, ref float moveDist, out BaseTrash hitTrash)
+    {
+        hitTrash = null;
+
+        SpatialGridManager.Instance.GetTrashAroundPosition(start, _nearbyTrash);
+
+        if (_nearbyTrash.Count == 0) return false;
+
+        Vector2 dir = end - start;
+        float len = dir.magnitude;
+        if (len <= 0.0001f) return false;
+
+        dir /= len;
+        float maxTravel = Mathf.Min(len, moveDist);
+        float radius = collisionCheckRadius;
+        float combinedRadius = radius * 2f;
+        float combinedRadiusSqr = combinedRadius * combinedRadius;
+
+        float bestDist = maxTravel;
+
+        for (int i = 0; i < _nearbyTrash.Count; i++)
+        {
+            var trash = _nearbyTrash[i];
+            if (trash == null || trash == this || trash.IsAbsorbing || trash._isRecentlyHit) continue;
+
+            Vector2 trashPos = trash.transform.position;
+            Vector2 toTrash = trashPos - start;
+
+            float proj = Vector2.Dot(toTrash, dir);
+            if (proj < 0f || proj > maxTravel + combinedRadius) continue;
+
+            float sqDistToLine = toTrash.sqrMagnitude - proj * proj;
+            if (sqDistToLine > combinedRadiusSqr) continue;
+
+            float offset = Mathf.Sqrt(Mathf.Max(combinedRadiusSqr - sqDistToLine, 0f));
+            float hitAlong = proj - offset;
+            if (hitAlong < 0f) hitAlong = proj;
+
+            if (hitAlong < 0f || hitAlong > bestDist) continue;
+
+            bestDist = hitAlong;
+            hitTrash = trash;
+        }
+
+        if (hitTrash == null) return false;
+
+        moveDist = Mathf.Max(0f, bestDist);
+        return true;
     }
 
     private void HandleSleepCheck()
     {
         float speed = currentVelocity.magnitude;
-
         if (speed < sleepSpeedThreshold && speed > 0f)
         {
             _sleepTimer += Time.fixedDeltaTime;
@@ -125,179 +201,80 @@ public class BaseTrash : BasePoolItem
 
     private void HandleBoundaryCheck()
     {
-        if (mainCamera == null) return;
+        if (WorldBounds2D.Instance == null) return;
 
-        Vector3 vp = mainCamera.WorldToViewportPoint(transform.position);
-        bool bounceX = false;
-        bool bounceY = false;
-
-        if (vp.x < viewportPadding)
-        {
-            vp.x = viewportPadding;
-            bounceX = true;
-        }
-        else if (vp.x > 1 - viewportPadding)
-        {
-            vp.x = 1 - viewportPadding;
-            bounceX = true;
-        }
-
-        if (vp.y < viewportPadding)
-        {
-            vp.y = viewportPadding;
-            bounceY = true;
-        }
-        else if (vp.y > 1 - viewportPadding)
-        {
-            vp.y = 1 - viewportPadding;
-            bounceY = true;
-        }
-
-        if (bounceX || bounceY)
-        {
-            transform.position = mainCamera.ViewportToWorldPoint(vp);
-            if (bounceX) currentVelocity.x *= -1;
-            if (bounceY) currentVelocity.y *= -1;
-        }
-    }
-
-    public void ApplyBroomHit(Vector2 hitDirection)
-    {
-        if (IsAbsorbing) return;
-
-        WakeUp();
-        StartHitCooldown();
-        currentVelocity = hitDirection.normalized * broomForce;
+        Vector2 pos = transform.position;
+        Vector2 vel = currentVelocity;
+        WorldBounds2D.Instance.Bounce(ref pos, ref vel, viewportPadding);
+        transform.position = pos;
+        currentVelocity = vel;
     }
 
     public void ApplyBroomHit(Vector2 hitDirection, float power)
     {
         if (IsAbsorbing) return;
-
         WakeUp();
-        StartHitCooldown();
+        StartHitCooldownTimer();
         currentVelocity = hitDirection.normalized * broomForce * power;
     }
 
     public void ApplyTrashHit(Vector2 hitDirection)
     {
         if (IsAbsorbing) return;
-
         WakeUp();
-        StartHitCooldown();
-
-        Vector2 impulse = hitDirection.normalized * trashForce;
-        currentVelocity += impulse;
+        StartHitCooldownTimer();
+        currentVelocity += hitDirection.normalized * trashForce;
         currentVelocity *= collisionDamping;
     }
 
-    private void HandleTrashCollisions()
-    {
-        List<BaseTrash> potentialCollisions = SpatialGridManager.Instance.GetNearbyTrash(this);
-
-        float checkRadiusSqr = collisionCheckRadius * collisionCheckRadius;
-        Vector2 selfPos = transform.position;
-
-        foreach (var otherTrash in potentialCollisions)
-        {
-            if (otherTrash == null || otherTrash == this) continue;
-            if (otherTrash.IsAbsorbing) continue;
-
-            Vector2 otherPos = otherTrash.transform.position;
-            float distSqr = (selfPos - otherPos).sqrMagnitude;
-
-            if (distSqr > checkRadiusSqr) continue;
-
-            Vector2 relativeVel = currentVelocity - otherTrash.CurrentVelocity;
-            if (relativeVel.sqrMagnitude < minCollisionSpeed * minCollisionSpeed)
-                continue;
-
-            if (!otherTrash._isRecentlyHit)
-            {
-                Vector2 hitDirection = (otherPos - selfPos).normalized;
-                if (hitDirection == Vector2.zero)
-                    hitDirection = Random.insideUnitCircle.normalized;
-
-                otherTrash.ApplyTrashHit(hitDirection);
-
-                Vector2 selfImpulse = -hitDirection * trashForce;
-                currentVelocity += selfImpulse;
-                currentVelocity *= collisionDamping;
-
-                StartHitCooldown();
-                return;
-            }
-        }
-    }
-
-    private void StartHitCooldown()
+    private void StartHitCooldownTimer()
     {
         _isRecentlyHit = true;
-        if (_hitCooldownCoroutine != null)
-        {
-            StopCoroutine(_hitCooldownCoroutine);
-        }
-        _hitCooldownCoroutine = StartCoroutine(HitCooldownCoroutine());
+        _hitCooldownTimer = hitCooldown;
     }
 
-    private IEnumerator HitCooldownCoroutine()
+    private void EnsureColliders()
     {
-        yield return new WaitForSeconds(hitCooldown);
-        _isRecentlyHit = false;
-        _hitCooldownCoroutine = null;
+        if (_colliders != null) return;
+        _colliders = GetComponentsInChildren<Collider2D>(true);
     }
 
-    public void OnEnterBlackHole(Vector3 targetPosition)
+    private void SetCollidersEnabled(bool enabled)
     {
-        if (!IsAbsorbing)
+        EnsureColliders();
+        for (int i = 0; i < _colliders.Length; i++)
         {
-            IsAbsorbing = true;
-            _isSleeping = false;
-            currentVelocity = Vector2.zero;
-            StartCoroutine(AbsorbEffect(targetPosition));
+            if (_colliders[i] != null)
+                _colliders[i].enabled = enabled;
         }
     }
 
-    protected virtual IEnumerator AbsorbEffect(Vector3 target)
+    public void OnEnterBlackHole()
     {
-        Vector3 initialPosition = transform.position;
-        float elapsed = 0f;
+        if (IsAbsorbing) return;
 
-        while (elapsed < absorbEffectDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / absorbEffectDuration;
-            float scale_t = scaleCurve.Evaluate(t);
-            float move_t = moveCurve.Evaluate(t);
-
-            transform.Rotate(0f, 0f, rotationSpeed * Time.deltaTime);
-            transform.localScale = Vector3.LerpUnclamped(initialScale, Vector3.zero, scale_t);
-            transform.position = Vector2.LerpUnclamped(initialPosition, target, move_t);
-
-            yield return null;
-        }
-
-        IsAbsorbing = false;
-        ResetState();
-        TrashPool.Instance.ReturnTrash(this);
+        IsAbsorbing = true;
+        _isSleeping = false;
+        currentVelocity = Vector2.zero;
+        SetCollidersEnabled(false);
     }
 
     public override void ResetState()
     {
         base.ResetState();
-
         currentVelocity = Vector2.zero;
         IsAbsorbing = false;
         transform.localScale = initialScale;
-
-        if (_hitCooldownCoroutine != null)
-        {
-            StopCoroutine(_hitCooldownCoroutine);
-            _hitCooldownCoroutine = null;
-        }
         _isRecentlyHit = false;
-
+        _hitCooldownTimer = 0f;
         _isSleeping = false;
         _sleepTimer = 0f;
+        SetCollidersEnabled(true);
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, collisionCheckRadius);
     }
 }

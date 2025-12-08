@@ -1,37 +1,47 @@
+Ôªøusing System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(PlayerController))]
 public class SkillManager : MonoBehaviour
 {
-    [Header("§p±Ω≥]©w")]
+    [Header("Â∞èÊéÉË®≠ÂÆö")]
     [SerializeField] private LayerMask trashLayer;
+    [SerializeField] private float minSweepForce;
+    [SerializeField] private float maxSweepForce;
 
-    [Header("•k¡‰ªW§O±Ωµ¯ƒ±")]
+    [Header("Âè≥ÈçµËìÑÂäõÊéÉË¶ñË¶∫")]
     [SerializeField] private Transform chargedSweepRoot;
     [SerializeField] private DynamicSweepMesh sweepMesh;
     [SerializeField] private PolygonCollider2D sweepCollider;
 
-    [Header("•k¡‰ªW§O±Ω∞—º∆")]
-    [SerializeField] private float minForceMultiplier = 1f;
-    [SerializeField] private float maxForceMultiplier = 3f;
+    [Header("Âè≥ÈçµËìÑÂäõÊéÉÂèÉÊï∏")]
+    [SerializeField] private float minForceMultiplier;
+    [SerializeField] private float maxForceMultiplier;
+    [SerializeField] private float chargedPowerExponent = 1f;
+
+    private readonly Collider2D[] smallSweepResults = new Collider2D[32];
+    private readonly HashSet<BaseTrash> sweepHitTrash = new HashSet<BaseTrash>();
 
     private PlayerController player;
+    private ContactFilter2D smallSweepFilter;
 
     private void Awake()
     {
+        smallSweepFilter = new ContactFilter2D
+        {
+            useLayerMask = true,
+            layerMask = trashLayer,
+            useTriggers = true
+        };
+
         player = GetComponent<PlayerController>();
 
         if (chargedSweepRoot != null)
         {
-            if (!sweepMesh)
-                sweepMesh = chargedSweepRoot.GetComponentInChildren<DynamicSweepMesh>(true);
-            if (!sweepCollider)
-                sweepCollider = chargedSweepRoot.GetComponentInChildren<PolygonCollider2D>(true);
-
-            if (sweepCollider != null)
-                sweepCollider.isTrigger = true;
-
-            chargedSweepRoot.gameObject.SetActive(true);
+            if (!sweepMesh) sweepMesh = chargedSweepRoot.GetComponentInChildren<DynamicSweepMesh>(true);
+            if (!sweepCollider) sweepCollider = chargedSweepRoot.GetComponentInChildren<PolygonCollider2D>(true);
+            if (sweepCollider) sweepCollider.isTrigger = true;
+            chargedSweepRoot.gameObject.SetActive(false);
         }
     }
 
@@ -49,72 +59,71 @@ public class SkillManager : MonoBehaviour
         player.OnChargedSweepReleased -= HandleChargedSweepReleased;
     }
 
-    // ------------------- §p±Ω≥B≤z -------------------
-    private void HandleSweepMove(Vector2 center, float radius, Vector2 moveDir)
+    private void HandleSweepMove(Vector2 center, float radius, Vector2 moveDir, float power01)
     {
-        var hits = Physics2D.OverlapCircleAll(center, radius, trashLayer);
-        foreach (var hit in hits)
+        if (moveDir.sqrMagnitude < 0.0001f) return;
+
+        float curve = power01 * power01;
+        float power = Mathf.Lerp(minSweepForce, maxSweepForce, curve);
+
+        sweepHitTrash.Clear();
+        int count = Physics2D.OverlapCircle(center, radius, smallSweepFilter, smallSweepResults);
+
+        for (int i = 0; i < count; i++)
         {
-            var trash = hit.GetComponent<BaseTrash>();
-            if (trash == null) continue;
-            trash.ApplyBroomHit(moveDir);
+            var col = smallSweepResults[i];
+            if (!col) continue;
+            var trash = col.GetComponent<BaseTrash>();
+            if (trash && sweepHitTrash.Add(trash))
+                trash.ApplyBroomHit(moveDir, power);
         }
+
+        if (sweepHitTrash.Count > 0)
+            player.ApplyHitSlowdown(sweepHitTrash.Count, power01);
     }
 
-    // ------------------- ªW§O±Ωµ¯ƒ±ßÛ∑s -------------------
     private void HandleChargedSweepUpdate(float holdTime, float t, Vector2 origin, Vector2 dir)
     {
-        if (chargedSweepRoot == null || sweepMesh == null || sweepCollider == null)
-            return;
+        if (chargedSweepRoot == null || sweepMesh == null || sweepCollider == null) return;
 
         chargedSweepRoot.position = origin;
         chargedSweepRoot.right = dir;
-
         sweepMesh.UpdateShape(t);
-        Vector2[] path = sweepMesh.CurrentPath2D;
-        if (path == null || path.Length < 3) return;
 
-        sweepCollider.pathCount = 1;
-        sweepCollider.SetPath(0, path);
-        sweepCollider.isTrigger = true;
+        var path = sweepMesh.CurrentPath2D;
+        if (path != null && path.Length >= 3)
+        {
+            sweepCollider.pathCount = 1;
+            sweepCollider.SetPath(0, path);
+        }
 
         chargedSweepRoot.gameObject.SetActive(true);
     }
 
-    // ------------------- ªW§O±ΩπÍª⁄•¥¿ª -------------------
     private void HandleChargedSweepReleased(float holdTime, float t, Vector2 origin, Vector2 dir)
     {
-        if (sweepCollider == null)
-            return;
+        if (sweepCollider == null) return;
 
-        float forceMul = Mathf.Lerp(minForceMultiplier, maxForceMultiplier, t);
+        float curve = Mathf.Pow(t, chargedPowerExponent);
+        float forceMul = Mathf.Lerp(minForceMultiplier, maxForceMultiplier, curve);
 
-        ContactFilter2D filter = new ContactFilter2D
-        {
-            useLayerMask = true,
-            layerMask = trashLayer,
-            useTriggers = true
-        };
-
+        ContactFilter2D filter = new ContactFilter2D { useLayerMask = true, layerMask = trashLayer, useTriggers = true };
         Collider2D[] results = new Collider2D[32];
         int count = sweepCollider.Overlap(filter, results);
 
         for (int i = 0; i < count; i++)
         {
-            if (results[i] == null) continue;
+            if (!results[i]) continue;
             var trash = results[i].GetComponent<BaseTrash>();
-            if (trash == null) continue;
+            if (!trash) continue;
 
-            Vector2 itemPos = results[i].transform.position;
-            Vector2 radialDir = itemPos - origin;
+            Vector2 radialDir = ((Vector2)results[i].transform.position - origin);
             if (radialDir.sqrMagnitude < 0.0001f) continue;
             radialDir.Normalize();
 
-            // ≤ƒ§G≠”∞—º∆¶p™GßA•ª®”¥NÆ≥®”∑Ì°uªW§O¨Ìº∆°v•Œ°A•i•H™Ω±µ•Œ holdTime
-            trash.ApplyBroomHit(radialDir * forceMul, holdTime);
+            trash.ApplyBroomHit(radialDir, forceMul);
         }
 
-        if (chargedSweepRoot != null)
-            chargedSweepRoot.gameObject.SetActive(false);
+        chargedSweepRoot.gameObject.SetActive(false);
     }
 }

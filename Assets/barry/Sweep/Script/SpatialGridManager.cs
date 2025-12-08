@@ -1,40 +1,13 @@
-using UnityEngine;
 using System.Collections.Generic;
-
+using UnityEngine;
 public class SpatialGridManager : MonoBehaviour
 {
     public static SpatialGridManager Instance { get; private set; }
 
     [Header("網格設定")]
     public float cellSize = 2.0f;
-    private List<BaseTrash> _cachedNeighbors = new List<BaseTrash>();
-    private Dictionary<Vector2Int, List<BaseTrash>> grid = new Dictionary<Vector2Int, List<BaseTrash>>();
-    
-    public void UpdateGrid(List<BaseTrash> activeTrashList)
-    {
-        // 1. 先清空每個格子的 List，而不是 new 新 List
-        foreach (var kv in grid)
-        {
-            kv.Value.Clear();
-        }
 
-        // 2. 將垃圾重新放入對應格子
-        foreach (var trash in activeTrashList)
-        {
-            if (trash.IsAbsorbing) continue;
-
-            Vector2Int cellPos = GetCellPos(trash.transform.position);
-
-            if (!grid.TryGetValue(cellPos, out var cellList))
-            {
-                // 沒有就 new 一次，之後會重用
-                cellList = new List<BaseTrash>();
-                grid[cellPos] = cellList;
-            }
-
-            cellList.Add(trash);
-        }
-    }
+    private readonly Dictionary<Vector2Int, List<BaseTrash>> grid = new Dictionary<Vector2Int, List<BaseTrash>>();
 
     private void Awake()
     {
@@ -42,14 +15,34 @@ public class SpatialGridManager : MonoBehaviour
         else Destroy(gameObject);
     }
 
-    public List<BaseTrash> GetNearbyTrash(BaseTrash trash)
+    public void UpdateGrid(List<BaseTrash> activeTrashList)
     {
-        return GetTrashAroundPosition(trash.transform.position);
+        foreach (var kv in grid) kv.Value.Clear();
+
+        for (int i = 0; i < activeTrashList.Count; i++)
+        {
+            var trash = activeTrashList[i];
+            if (trash == null || trash.IsAbsorbing) continue;
+
+            Vector2Int cellPos = GetCellPos(trash.transform.position);
+            if (!grid.TryGetValue(cellPos, out var cellList))
+            {
+                cellList = new List<BaseTrash>();
+                grid[cellPos] = cellList;
+            }
+            cellList.Add(trash);
+        }
     }
 
-    public List<BaseTrash> GetTrashAroundPosition(Vector3 position)
+    public void GetNearbyTrash(BaseTrash trash, List<BaseTrash> buffer)
     {
-        _cachedNeighbors.Clear();
+        if (trash == null) return;
+        GetTrashAroundPosition(trash.transform.position, buffer);
+    }
+
+    public void GetTrashAroundPosition(Vector3 position, List<BaseTrash> buffer)
+    {
+        buffer.Clear();
         Vector2Int centerCell = GetCellPos(position);
 
         for (int x = -1; x <= 1; x++)
@@ -57,13 +50,12 @@ public class SpatialGridManager : MonoBehaviour
             for (int y = -1; y <= 1; y++)
             {
                 Vector2Int checkPos = new Vector2Int(centerCell.x + x, centerCell.y + y);
-                if (grid.TryGetValue(checkPos, out List<BaseTrash> cellContent))
+                if (grid.TryGetValue(checkPos, out var cellContent) && cellContent.Count > 0)
                 {
-                    _cachedNeighbors.AddRange(cellContent);
+                    buffer.AddRange(cellContent);
                 }
             }
         }
-        return _cachedNeighbors;
     }
 
     private Vector2Int GetCellPos(Vector3 position)

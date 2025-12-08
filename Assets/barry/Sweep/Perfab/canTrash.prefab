@@ -210,3 +210,5 @@ MonoBehaviour:
   minCollisionSpeed: 0.4
   sleepSpeedThreshold: 0.2
   sleepTime: 0.5
+  maxSubsteps: 3
+  maxMovePerSubstep: 0.1

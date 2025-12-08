@@ -65,16 +65,14 @@
     <Compile Include="Assets\barry\Sweep\Script\PreloadConfigSO.cs" />
     <Compile Include="Assets\barry\Sweep\Script\DynamicSpawnManager.cs" />
     <Compile Include="Assets\barry\Sweep\Script\DragLine.cs" />
-    <Compile Include="Assets\barry\TestFolder\Scripts\TestPlayerController.cs" />
     <Compile Include="Assets\barry\Sweep\Script\BasePoolItem.cs" />
     <Compile Include="Assets\barry\Sweep\Script\BasePool.cs" />
     <Compile Include="Assets\barry\Sweep\Script\TrashPool.cs" />
-    <Compile Include="Assets\barry\TestFolder\Scripts\HintCircle.cs" />
     <Compile Include="Assets\barry\Sweep\Script\LevelSpawner.cs" />
     <Compile Include="Assets\barry\Sweep\Script\itemData.cs" />
+    <Compile Include="Assets\barry\Sweep\Script\WorldBounds2D.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Trash\CanTrash.cs" />
     <Compile Include="Assets\barry\Sweep\Script\BlackHole.cs" />
-    <Compile Include="Assets\barry\TestFolder\Scripts\ItemSpawner.cs" />
     <Compile Include="Assets\barry\Sweep\Script\SkillManager.cs" />
     <Compile Include="Assets\InputSystem_Actions.cs" />
     <Compile Include="Assets\TutorialInfo\Scripts\Readme.cs" />
@@ -85,10 +83,8 @@
     <Compile Include="Assets\barry\Sweep\Script\BalckObstacle.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Trash\PaperTrash.cs" />
     <Compile Include="Assets\barry\Sweep\Script\BaseObstacle.cs" />
-    <Compile Include="Assets\barry\TestFolder\Scripts\Droppeditem.cs" />
     <Compile Include="Assets\barry\Sweep\Script\ObstaclePool.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Trash\BaseTrash.cs" />
-    <Compile Include="Assets\barry\TestFolder\Scripts\Rock.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
