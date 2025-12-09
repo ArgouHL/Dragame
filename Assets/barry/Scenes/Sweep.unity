@@ -834,7 +834,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1576233026
 Transform:
   m_ObjectHideFlags: 0
@@ -1058,15 +1058,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e14c9cd293edd124d8d6b08bb27bb2d3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  directionSmoothing: 0.05
-  useMouseVelocity: 1
-  velocityWeight: 0.25
-  smoothedDirection: {x: 1, y: 0}
-  lastMousePosition: {x: 0, y: 0}
-  hasLastPosition: 0
-  _directionSmoothing: 0.1
-  _useMouseVelocity: 1
-  _velocityWeight: 0.2
 --- !u!1 &1632655380
 GameObject:
   m_ObjectHideFlags: 0

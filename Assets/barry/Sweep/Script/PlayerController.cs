@@ -90,7 +90,22 @@ public class PlayerController : MonoBehaviour
         Vector2 pointerWorld = ScreenToWorld(pointerPosition.ReadValue<Vector2>());
 
         if (pointerPress.IsPressed() && !blockBoth)
-            dragLine?.ShowLine(dragStart, pointerWorld);
+        {
+            Vector2 drag = pointerWorld - dragStart;
+            float len = drag.magnitude;
+
+            Vector2 center = (Vector2)transform.position + sweepOffset;
+
+            if (len > 0.001f)
+            {
+                Vector2 dir = drag / len;
+                dragLine?.ShowLine(center, center + dir * len);
+            }
+            else
+            {
+                dragLine?.ShowLine(center, center);
+            }
+        }
 
         if (isRightDown && !blockBoth)
         {
@@ -116,6 +131,7 @@ public class PlayerController : MonoBehaviour
             OnChargedSweepUpdate?.Invoke(hold, t, origin, chargedDir);
         }
     }
+
 
     private void OnPress(InputAction.CallbackContext ctx)
     {
@@ -206,8 +222,11 @@ public class PlayerController : MonoBehaviour
         dragStart = ScreenToWorld(pointerPosition.ReadValue<Vector2>());
         currentSpeed = 0f;
         rb.linearVelocity = Vector2.zero;
-        dragLine?.ShowLine(dragStart, dragStart);
+
+        Vector2 center = (Vector2)transform.position + sweepOffset;
+        dragLine?.ShowLine(center, center);
     }
+
 
     private void EndDrag()
     {

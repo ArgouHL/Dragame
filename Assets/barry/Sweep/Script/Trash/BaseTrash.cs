@@ -58,6 +58,7 @@ public class BaseTrash : BasePoolItem
         if (currentVelocity.sqrMagnitude < 0.0001f)
         {
             currentVelocity = Vector2.zero;
+            ResolveOverlap();
             return;
         }
 
@@ -102,14 +103,23 @@ public class BaseTrash : BasePoolItem
                 if (hitDir.sqrMagnitude < 0.0001f) hitDir = Random.insideUnitCircle;
                 hitDir.Normalize();
 
-                hitTrash.ApplyTrashHit(hitDir);
-                Vector2 v = currentVelocity;
-                float proj = Vector2.Dot(v, hitDir);
-                v -= 2f * proj * hitDir;
-                currentVelocity = v * collisionDamping;
+                Vector2 relVel = currentVelocity - hitTrash.CurrentVelocity;
+                float relSpeed = Vector2.Dot(relVel, hitDir);
 
-                StartHitCooldownTimer();
-                hitTrash.StartHitCooldownTimer();
+                if (relSpeed > minCollisionSpeed)
+                {
+                    float impulse01 = Mathf.Clamp01((relSpeed - minCollisionSpeed) / minCollisionSpeed);
+
+                    hitTrash.ApplyTrashHit(hitDir, impulse01);
+
+                    Vector2 v = currentVelocity;
+                    float proj = Vector2.Dot(v, hitDir);
+                    v -= 2f * proj * hitDir;
+                    currentVelocity = v * collisionDamping;
+
+                    StartHitCooldownTimer();
+                    hitTrash.StartHitCooldownTimer();
+                }
             }
 
             HandleBoundaryCheck();
@@ -123,6 +133,8 @@ public class BaseTrash : BasePoolItem
                 break;
             }
         }
+
+        ResolveOverlap();
     }
 
     private bool CheckPathCollision(Vector2 start, Vector2 end, ref float moveDist, out BaseTrash hitTrash)
@@ -175,6 +187,38 @@ public class BaseTrash : BasePoolItem
         return true;
     }
 
+    private void ResolveOverlap()
+    {
+        if (SpatialGridManager.Instance == null) return;
+        if (collisionCheckRadius <= 0f) return;
+
+        SpatialGridManager.Instance.GetTrashAroundPosition(transform.position, _nearbyTrash);
+        if (_nearbyTrash.Count == 0) return;
+
+        Vector2 pos = transform.position;
+        float radius = collisionCheckRadius;
+        float minDist = radius * 2f;
+        float minDistSqr = minDist * minDist;
+
+        for (int i = 0; i < _nearbyTrash.Count; i++)
+        {
+            var trash = _nearbyTrash[i];
+            if (trash == null || trash == this || trash.IsAbsorbing) continue;
+
+            Vector2 otherPos = trash.transform.position;
+            Vector2 delta = pos - otherPos;
+            float sqr = delta.sqrMagnitude;
+            if (sqr <= 0.000001f || sqr >= minDistSqr) continue;
+
+            float dist = Mathf.Sqrt(sqr);
+            float penetration = minDist - dist;
+            Vector2 push = delta / dist * penetration;
+            pos += push;
+        }
+
+        transform.position = pos;
+    }
+
     private void HandleSleepCheck()
     {
         float speed = currentVelocity.magnitude;
@@ -218,12 +262,13 @@ public class BaseTrash : BasePoolItem
         currentVelocity = hitDirection.normalized * broomForce * power;
     }
 
-    public void ApplyTrashHit(Vector2 hitDirection)
+    public void ApplyTrashHit(Vector2 hitDirection, float strength01)
     {
         if (IsAbsorbing) return;
         WakeUp();
         StartHitCooldownTimer();
-        currentVelocity += hitDirection.normalized * trashForce;
+        float addSpeed = trashForce * Mathf.Clamp01(strength01);
+        currentVelocity += hitDirection.normalized * addSpeed;
         currentVelocity *= collisionDamping;
     }
 

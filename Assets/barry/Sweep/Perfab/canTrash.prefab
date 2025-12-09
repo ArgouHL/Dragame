@@ -204,11 +204,9 @@ MonoBehaviour:
   viewportPadding: 0.1
   broomForce: 20
   trashForce: 10
-  collisionCheckRadius: 0.7
+  collisionCheckRadius: 0.49
   hitCooldown: 0.2
   collisionDamping: 0.6
   minCollisionSpeed: 0.4
   sleepSpeedThreshold: 0.2
   sleepTime: 0.5
-  maxSubsteps: 3
-  maxMovePerSubstep: 0.1
