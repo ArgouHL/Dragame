@@ -279,15 +279,34 @@ public class LevelSpawner : MonoBehaviour
 
     public Vector3 GetRandomPositionInQuadrant(SpawnQuadrant quadrant)
     {
-        float minX = centerPoint.x - spawnAreaSize.x / 2;
-        float maxX = centerPoint.x + spawnAreaSize.x / 2;
-        float minY = centerPoint.y - spawnAreaSize.y / 2;
-        float maxY = centerPoint.y + spawnAreaSize.y / 2;
-        float midX = centerPoint.x;
-        float midY = centerPoint.y;
+        float minX;
+        float maxX;
+        float minY;
+        float maxY;
 
-        float x = 0;
-        float y = 0;
+        // 優先使用 WorldBounds2D 的邊界
+        if (WorldBounds2D.Instance != null)
+        {
+            Rect worldRect = WorldBounds2D.Instance.GetWorldRect();
+            minX = worldRect.xMin;
+            maxX = worldRect.xMax;
+            minY = worldRect.yMin;
+            maxY = worldRect.yMax;
+        }
+        else
+        {
+            // 沒有 WorldBounds2D 的情況就用原本的設定 (保險用)
+            minX = centerPoint.x - spawnAreaSize.x / 2f;
+            maxX = centerPoint.x + spawnAreaSize.x / 2f;
+            minY = centerPoint.y - spawnAreaSize.y / 2f;
+            maxY = centerPoint.y + spawnAreaSize.y / 2f;
+        }
+
+        float midX = (minX + maxX) * 0.5f;
+        float midY = (minY + maxY) * 0.5f;
+
+        float x = 0f;
+        float y = 0f;
 
         switch (quadrant)
         {
@@ -309,6 +328,6 @@ public class LevelSpawner : MonoBehaviour
                 break;
         }
 
-        return new Vector3(x, y, 0);
+        return new Vector3(x, y, 0f);
     }
 }

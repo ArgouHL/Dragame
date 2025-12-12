@@ -67,6 +67,7 @@ public class SkillManager : MonoBehaviour
         float power = Mathf.Lerp(minSweepForce, maxSweepForce, curve);
 
         sweepHitTrash.Clear();
+        float totalWeight = 0f;
         int count = Physics2D.OverlapCircle(center, radius, smallSweepFilter, smallSweepResults);
 
         for (int i = 0; i < count; i++)
@@ -75,11 +76,15 @@ public class SkillManager : MonoBehaviour
             if (!col) continue;
             var trash = col.GetComponent<BaseTrash>();
             if (trash && sweepHitTrash.Add(trash))
+            {
                 trash.ApplyBroomHit(moveDir, power);
+                if (trash.Weight > 0f)
+                    totalWeight += trash.Weight;
+            }
         }
 
-        if (sweepHitTrash.Count > 0)
-            player.ApplyHitSlowdown(sweepHitTrash.Count, power01);
+        if (totalWeight > 0f)
+            player.ApplyHitSlowdown(totalWeight, power01);
     }
 
     private void HandleChargedSweepUpdate(float holdTime, float t, Vector2 origin, Vector2 dir)

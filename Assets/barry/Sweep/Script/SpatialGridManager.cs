@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+
 public class SpatialGridManager : MonoBehaviour
 {
     public static SpatialGridManager Instance { get; private set; }
@@ -17,7 +18,11 @@ public class SpatialGridManager : MonoBehaviour
 
     public void UpdateGrid(List<BaseTrash> activeTrashList)
     {
-        foreach (var kv in grid) kv.Value.Clear();
+        // 清空現有網格，但保留字典鍵（優化重用列表）
+        foreach (var kv in grid)
+        {
+            kv.Value.Clear();
+        }
 
         for (int i = 0; i < activeTrashList.Count; i++)
         {
@@ -45,6 +50,7 @@ public class SpatialGridManager : MonoBehaviour
         buffer.Clear();
         Vector2Int centerCell = GetCellPos(position);
 
+        // 檢查中心網格及其周圍 8 個網格（3x3 範圍）
         for (int x = -1; x <= 1; x++)
         {
             for (int y = -1; y <= 1; y++)
@@ -65,4 +71,25 @@ public class SpatialGridManager : MonoBehaviour
             Mathf.FloorToInt(position.y / cellSize)
         );
     }
+
+#if UNITY_EDITOR
+    // 可選：編輯器下繪製網格 Gizmos 以便除錯
+    private void OnDrawGizmos()
+    {
+        if (!Application.isPlaying) return;
+
+        Gizmos.color = Color.blue;
+        foreach (var kv in grid)
+        {
+            if (kv.Value.Count == 0) continue;
+
+            Vector3 center = new Vector3(
+                (kv.Key.x + 0.5f) * cellSize,
+                (kv.Key.y + 0.5f) * cellSize,
+                0f
+            );
+            Gizmos.DrawWireCube(center, new Vector3(cellSize, cellSize, 0.1f));
+        }
+    }
+#endif
 }

@@ -68,6 +68,7 @@
     <Compile Include="Assets\barry\Sweep\Script\BasePoolItem.cs" />
     <Compile Include="Assets\barry\Sweep\Script\BasePool.cs" />
     <Compile Include="Assets\barry\Sweep\Script\TrashPool.cs" />
+    <Compile Include="Assets\barry\Sweep\Script\Ani\PlayerStateMachine.cs" />
     <Compile Include="Assets\barry\Sweep\Script\LevelSpawner.cs" />
     <Compile Include="Assets\barry\Sweep\Script\itemData.cs" />
     <Compile Include="Assets\barry\Sweep\Script\WorldBounds2D.cs" />
@@ -77,13 +78,18 @@
     <Compile Include="Assets\InputSystem_Actions.cs" />
     <Compile Include="Assets\TutorialInfo\Scripts\Readme.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Trash\BananaTrash.cs" />
-    <Compile Include="Assets\barry\Sweep\Script\BlackObstacle.cs" />
+    <Compile Include="Assets\barry\Sweep\Script\Ani\PlayerMoveState.cs" />
     <Compile Include="Assets\barry\Sweep\Script\PlayerController.cs" />
     <Compile Include="Assets\barry\Sweep\Script\DynamicSweepMesh.cs" />
+    <Compile Include="Assets\barry\Sweep\Script\Ani\PlayerState.cs" />
     <Compile Include="Assets\barry\Sweep\Script\BalckObstacle.cs" />
+    <Compile Include="Assets\barry\Sweep\Script\Ani\PlayerAnimatorController.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Trash\PaperTrash.cs" />
     <Compile Include="Assets\barry\Sweep\Script\BaseObstacle.cs" />
+    <Compile Include="Assets\barry\Sweep\Script\BlackHoleObstacle.cs" />
+    <Compile Include="Assets\barry\Sweep\Script\Ani\PlayerIdleState.cs" />
     <Compile Include="Assets\barry\Sweep\Script\ObstaclePool.cs" />
+    <Compile Include="Assets\barry\Sweep\Script\UIManager.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Trash\BaseTrash.cs" />
   </ItemGroup>
   <ItemGroup>

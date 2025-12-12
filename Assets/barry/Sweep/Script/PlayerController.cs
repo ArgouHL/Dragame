@@ -4,9 +4,10 @@ using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour
 {
+    public Vector2 fixForWall;
     private Camera cam;
     private PlayerInput input;
-    private Rigidbody2D rb;
+    public Rigidbody2D rb;
     [SerializeField] private DragLine dragLine;
 
     public event Action<Vector2, float, Vector2, float> OnSweepMove;
@@ -34,9 +35,6 @@ public class PlayerController : MonoBehaviour
     public float maxChargeTime = 1.5f;
     [SerializeField] private float chargeCenterOffset = 0f;
 
-    [Header("撞垃圾減速設定")]
-    [SerializeField] private float hitSlowPerTrash = 3f;
-
     public float CurrentSpeed => currentSpeed;
 
     private float rightPressStartTime;
@@ -45,15 +43,22 @@ public class PlayerController : MonoBehaviour
     private bool isRightDown = false;
     private bool blockBoth = false;
 
-    private bool isBeingAbsorbed;
+    public bool isBeingAbsorbed;
     private Collider2D[] colliders;
 
     private Vector2 chargedDir;
 
     public bool IsBeingAbsorbed => isBeingAbsorbed;
 
+    public static PlayerController instance { get; private set; }
     private void Awake()
     {
+        if (instance != null && instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        instance = this;
         cam = Camera.main;
         input = GetComponent<PlayerInput>();
         rb = GetComponent<Rigidbody2D>();
@@ -132,7 +137,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-
     private void OnPress(InputAction.CallbackContext ctx)
     {
         if (isBeingAbsorbed) return;
@@ -192,15 +196,8 @@ public class PlayerController : MonoBehaviour
         Vector2 toPointer = pointerWorld - baseOrigin;
         float sqrMag = toPointer.sqrMagnitude;
 
-        if (sqrMag > 0.0001f)
-        {
-            float mag = Mathf.Sqrt(sqrMag);
-            chargedDir = toPointer / mag;
-        }
-        else if (chargedDir.sqrMagnitude < 0.0001f)
-        {
-            chargedDir = Vector2.right;
-        }
+        float mag = Mathf.Sqrt(sqrMag);
+        chargedDir = toPointer / mag;
 
         Vector2 origin = baseOrigin + chargedDir * chargeCenterOffset;
 
@@ -227,7 +224,6 @@ public class PlayerController : MonoBehaviour
         dragLine?.ShowLine(center, center);
     }
 
-
     private void EndDrag()
     {
         dragLine?.HideLine();
@@ -239,13 +235,17 @@ public class PlayerController : MonoBehaviour
         currentSpeed = Mathf.Min(len * 3f, maxSpeed);
     }
 
-    public void ApplyHitSlowdown(int hitCount, float sweepPower01)
+    public void ApplyHitSlowdown(float totalWeight, float sweepPower01)
     {
-        if (hitCount <= 0 || currentSpeed <= 0f)
+        if (totalWeight <= 0f || currentSpeed <= 0f)
             return;
 
-        float slowAmount = hitSlowPerTrash * Mathf.Clamp01(sweepPower01) * hitCount;
-        currentSpeed = Mathf.Max(currentSpeed - slowAmount, 0f);
+        float w = Mathf.Max(0f, totalWeight) * Mathf.Clamp01(sweepPower01);
+        if (w <= 0f)
+            return;
+
+        float factor = 1f / (1f + w);
+        currentSpeed *= factor;
 
         if (currentSpeed <= 0.01f)
         {
@@ -269,7 +269,7 @@ public class PlayerController : MonoBehaviour
         if (currentSpeed > 0.01f)
         {
             Vector2 nextPos = rb.position + moveDir * currentSpeed * Time.fixedDeltaTime;
-
+            nextPos += fixForWall;
             if (WorldBounds2D.Instance != null && WorldBounds2D.Instance.IsOutside(nextPos))
             {
                 currentSpeed = 0f;
