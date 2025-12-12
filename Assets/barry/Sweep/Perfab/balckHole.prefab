@@ -84,7 +84,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   initialScale: {x: 1, y: 1, z: 1}
   obstacleType: 0
-  absorbRadius: 1.1
+  absorbRadius: 1.5
   trashAbsorbTime: 1
   trashRotateSpeed: 360
   trashScaleCurve:
@@ -141,6 +141,8 @@ MonoBehaviour:
   playerEjectDuration: 0.5
   playerEjectSpeed: 7
   playerRotateSpeed: 1
+  showTriggerGizmos: 1
+  triggerColor: {r: 1, g: 0.5, b: 0, a: 0.3}
 --- !u!1 &2883701614384982133
 GameObject:
   m_ObjectHideFlags: 0

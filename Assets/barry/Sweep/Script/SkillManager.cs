@@ -78,8 +78,8 @@ public class SkillManager : MonoBehaviour
             if (trash && sweepHitTrash.Add(trash))
             {
                 trash.ApplyBroomHit(moveDir, power);
-                if (trash.Weight > 0f)
-                    totalWeight += trash.Weight;
+               /* if (trash.Weight > 0f)
+                    totalWeight += trash.Weight;*/
             }
         }
 

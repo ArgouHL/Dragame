@@ -35,7 +35,20 @@ public class PlayerController : MonoBehaviour
     public float maxChargeTime = 1.5f;
     [SerializeField] private float chargeCenterOffset = 0f;
 
+    [Header("玩家重量設定 (越大越不容易被垃圾反推)")]
+    [SerializeField, Min(0.01f)] private float wieght = 1f;
+
+    [Header("掃到垃圾的反作用力設定")]
+    [SerializeField, Range(0f, 1f)] private float sweepRestitution = 0f;
+    [SerializeField] private bool allowBounceBack = false;
+
+    [Header("玩家被垃圾影響的手感")]
+    [SerializeField] private bool scaleHitBySweepPower = true;          // 是否依速度(掃力)縮放撞擊效果
+    [SerializeField, Range(0f, 1f)] private float minHitPower = 0.25f;  // 速度很低時也至少保留多少撞擊量
+    [SerializeField, Min(0f)] private float hitWeightScale = 1f;        // 放大/縮小垃圾重量對玩家減速的影響
+
     public float CurrentSpeed => currentSpeed;
+    public float Wieght => wieght;
 
     private float rightPressStartTime;
     public float rightHoldDuration { get; private set; }
@@ -51,6 +64,11 @@ public class PlayerController : MonoBehaviour
     public bool IsBeingAbsorbed => isBeingAbsorbed;
 
     public static PlayerController instance { get; private set; }
+
+    [Header("右鍵蓄力掃視覺")]
+    [SerializeField] private DynamicSweepMesh chargedSweepMesh;
+    [SerializeField] private float chargedSweepRotationOffset = -90f; // DynamicSweepMesh 預設朝上(+Y)，轉成朝右需 -90
+
     private void Awake()
     {
         if (instance != null && instance != this)
@@ -59,6 +77,7 @@ public class PlayerController : MonoBehaviour
             return;
         }
         instance = this;
+
         cam = Camera.main;
         input = GetComponent<PlayerInput>();
         rb = GetComponent<Rigidbody2D>();
@@ -69,6 +88,9 @@ public class PlayerController : MonoBehaviour
         pointerPosition = input.actions["PointerPosition"];
 
         dragLine?.HideLine();
+
+        if (chargedSweepMesh != null)
+            chargedSweepMesh.gameObject.SetActive(false);
     }
 
     private void OnEnable()
@@ -94,6 +116,7 @@ public class PlayerController : MonoBehaviour
 
         Vector2 pointerWorld = ScreenToWorld(pointerPosition.ReadValue<Vector2>());
 
+        // 左鍵拖曳線
         if (pointerPress.IsPressed() && !blockBoth)
         {
             Vector2 drag = pointerWorld - dragStart;
@@ -112,6 +135,7 @@ public class PlayerController : MonoBehaviour
             }
         }
 
+        // 右鍵蓄力：更新方向 + 事件 + 視覺跟隨滑鼠
         if (isRightDown && !blockBoth)
         {
             float hold = Mathf.Clamp(Time.time - rightPressStartTime, 0f, maxChargeTime);
@@ -119,12 +143,10 @@ public class PlayerController : MonoBehaviour
 
             Vector2 baseOrigin = (Vector2)transform.position + sweepOffset;
             Vector2 toPointer = pointerWorld - baseOrigin;
-            float sqrMag = toPointer.sqrMagnitude;
 
-            if (sqrMag > 0.0001f)
+            if (toPointer.sqrMagnitude > 0.0001f)
             {
-                float mag = Mathf.Sqrt(sqrMag);
-                chargedDir = toPointer / mag;
+                chargedDir = toPointer.normalized;
             }
             else if (chargedDir.sqrMagnitude < 0.0001f)
             {
@@ -133,7 +155,28 @@ public class PlayerController : MonoBehaviour
 
             Vector2 origin = baseOrigin + chargedDir * chargeCenterOffset;
 
+            // 事件：給你的判定/效果系統用
             OnChargedSweepUpdate?.Invoke(hold, t, origin, chargedDir);
+
+            // 視覺：不新增 script，直接在這裡控制 Mesh 物件的 transform
+            if (chargedSweepMesh != null)
+            {
+                if (!chargedSweepMesh.gameObject.activeSelf)
+                    chargedSweepMesh.gameObject.SetActive(true);
+
+                chargedSweepMesh.transform.position = origin;
+
+                float ang = Mathf.Atan2(chargedDir.y, chargedDir.x) * Mathf.Rad2Deg + chargedSweepRotationOffset;
+                chargedSweepMesh.transform.rotation = Quaternion.Euler(0f, 0f, ang);
+
+                chargedSweepMesh.UpdateShape(t);
+            }
+        }
+        else
+        {
+            // 沒有右鍵按住時，視覺關掉（避免卡在畫面上）
+            if (chargedSweepMesh != null && chargedSweepMesh.gameObject.activeSelf)
+                chargedSweepMesh.gameObject.SetActive(false);
         }
     }
 
@@ -169,11 +212,16 @@ public class PlayerController : MonoBehaviour
 
         isRightDown = true;
         rightPressStartTime = Time.time;
+
         if (isLeftDown)
         {
             BlockBoth();
             return;
         }
+
+        // 右鍵按下當下就先開啟視覺（避免第一幀延遲）
+        if (chargedSweepMesh != null && !chargedSweepMesh.gameObject.activeSelf)
+            chargedSweepMesh.gameObject.SetActive(true);
     }
 
     private void OnRightRelease(InputAction.CallbackContext ctx)
@@ -194,14 +242,23 @@ public class PlayerController : MonoBehaviour
         Vector2 pointerWorld = ScreenToWorld(pointerPosition.ReadValue<Vector2>());
         Vector2 baseOrigin = (Vector2)transform.position + sweepOffset;
         Vector2 toPointer = pointerWorld - baseOrigin;
-        float sqrMag = toPointer.sqrMagnitude;
 
-        float mag = Mathf.Sqrt(sqrMag);
-        chargedDir = toPointer / mag;
+        if (toPointer.sqrMagnitude > 0.0001f)
+        {
+            chargedDir = toPointer.normalized;
+        }
+        else if (chargedDir.sqrMagnitude < 0.0001f)
+        {
+            chargedDir = Vector2.right;
+        }
 
         Vector2 origin = baseOrigin + chargedDir * chargeCenterOffset;
 
         OnChargedSweepReleased?.Invoke(hold, t, origin, chargedDir);
+
+        // 放開後關掉視覺（如果你想放開後還留著動畫，可改成延遲關閉）
+        if (chargedSweepMesh != null && chargedSweepMesh.gameObject.activeSelf)
+            chargedSweepMesh.gameObject.SetActive(false);
     }
 
     private void BlockBoth()
@@ -210,6 +267,9 @@ public class PlayerController : MonoBehaviour
         dragLine?.HideLine();
         rb.linearVelocity = Vector2.zero;
         currentSpeed = 0f;
+
+        if (chargedSweepMesh != null && chargedSweepMesh.gameObject.activeSelf)
+            chargedSweepMesh.gameObject.SetActive(false);
     }
 
     private void UnblockBoth() => blockBoth = false;
@@ -235,17 +295,47 @@ public class PlayerController : MonoBehaviour
         currentSpeed = Mathf.Min(len * 3f, maxSpeed);
     }
 
-    public void ApplyHitSlowdown(float totalWeight, float sweepPower01)
+    /// <summary>
+    /// 讓玩家因為「掃到/撞到」垃圾而產生反作用力（主要是減速）
+    /// totalTrashWieght：本次命中的垃圾 wieght 加總
+    /// sweepPower01：0~1（可用玩家速度/蓄力強度）
+    /// </summary>
+    public void ApplyHitSlowdown(float totalTrashWieght, float sweepPower01)
     {
-        if (totalWeight <= 0f || currentSpeed <= 0f)
-            return;
+        if (currentSpeed <= 0f) return;
+        if (totalTrashWieght <= 0f) return;
 
-        float w = Mathf.Max(0f, totalWeight) * Mathf.Clamp01(sweepPower01);
-        if (w <= 0f)
-            return;
+        float M = Mathf.Max(0.01f, wieght);
 
-        float factor = 1f / (1f + w);
-        currentSpeed *= factor;
+        float p = 1f;
+        if (scaleHitBySweepPower)
+            p = Mathf.Lerp(minHitPower, 1f, Mathf.Clamp01(sweepPower01));
+
+        float m = Mathf.Max(0f, totalTrashWieght) * hitWeightScale * p;
+        if (m <= 0f) return;
+
+        float e = Mathf.Clamp01(sweepRestitution);
+
+        // 1D 碰撞（垃圾初速視為 0）：v' = (M - e*m) / (M + m) * v
+        float ratio = (M - e * m) / (M + m);
+
+        if (!allowBounceBack)
+        {
+            ratio = Mathf.Clamp01(ratio);
+            currentSpeed *= ratio;
+        }
+        else
+        {
+            if (ratio < 0f)
+            {
+                moveDir = -moveDir;
+                currentSpeed *= Mathf.Clamp01(-ratio);
+            }
+            else
+            {
+                currentSpeed *= Mathf.Clamp01(ratio);
+            }
+        }
 
         if (currentSpeed <= 0.01f)
         {
@@ -282,6 +372,7 @@ public class PlayerController : MonoBehaviour
 
             float sweepPower = Mathf.Clamp01(currentSpeed / maxSpeed);
             Vector2 center = (Vector2)transform.position + sweepOffset;
+
             OnSweepMove?.Invoke(center, sweepRadius, moveDir, sweepPower);
         }
         else
@@ -318,6 +409,9 @@ public class PlayerController : MonoBehaviour
         rb.linearVelocity = Vector2.zero;
         dragLine?.HideLine();
         SetCollidersEnabled(false);
+
+        if (chargedSweepMesh != null && chargedSweepMesh.gameObject.activeSelf)
+            chargedSweepMesh.gameObject.SetActive(false);
     }
 
     public void ExitBlackHole(Vector2 ejectDir, float ejectSpeed)

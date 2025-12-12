@@ -1,24 +1,26 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// ©U§£Ãþ«¬
+// ï¿½Uï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 public enum TrashType
 {
     Banana,
     Can,
     Paper,
-    // ¥iÂX¥R...
+    // ï¿½iï¿½Xï¿½R...
 }
 
-// ¦À¤l±ø¥Ø
+// ï¿½ï¿½ï¿½lï¿½ï¿½ï¿½ï¿½
 [System.Serializable]
 public class TrashPoolEntry : BasePoolEntry<TrashType, BaseTrash> { }
 
 
-// ©U§£ª«¥ó¦À
+// ï¿½Uï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 public class TrashPool : BasePool<TrashType, BaseTrash>
 {
-    public List<BaseTrash> ActiveTrashList { get; private set; } = new List<BaseTrash>();
+    [SerializeField]
+    // public List<BaseTrash> ActiveTrashList { get; private set; } = new List<BaseTrash>();
+    public List<BaseTrash> ActiveTrashList = new List<BaseTrash>();
     public static TrashPool Instance { get; private set; }
 
     [SerializeField]
@@ -26,7 +28,7 @@ public class TrashPool : BasePool<TrashType, BaseTrash>
 
     protected virtual void Awake()
     {
-        // ³]¸m Singleton
+        // ï¿½]ï¿½m Singleton
         if (Instance == null)
         {
             Instance = this;
@@ -37,12 +39,12 @@ public class TrashPool : BasePool<TrashType, BaseTrash>
             return;
         }
 
-        // ªì©l¤Æ¦À¤l
+        // ï¿½ï¿½lï¿½Æ¦ï¿½ï¿½l
         InitializePool(trashEntries);
     }
     private void FixedUpdate()
     {
-        // ¨C´V­««Øºô®æ
+        // ï¿½Cï¿½Vï¿½ï¿½ï¿½Øºï¿½ï¿½ï¿½
         SpatialGridManager.Instance.UpdateGrid(ActiveTrashList);
     }
 
@@ -52,9 +54,9 @@ public class TrashPool : BasePool<TrashType, BaseTrash>
 
         if (trash != null)
         {
-            trash.transform.position = position;  // ²K¥[³o¦æ¨Ó³]©w¦ì¸m
+            trash.transform.position = position;  // ï¿½Kï¿½[ï¿½oï¿½ï¿½Ó³]ï¿½wï¿½ï¿½m
             trash.gameObject.SetActive(true);
-            ActiveTrashList.Add(trash); // <--- ·s¼W¡G¥[¤J¬¡ÅD²M³æ
+            ActiveTrashList.Add(trash); // <--- ï¿½sï¿½Wï¿½Gï¿½[ï¿½Jï¿½ï¿½ï¿½Dï¿½Mï¿½ï¿½
             return trash;
         }
         return trash;
@@ -63,7 +65,7 @@ public class TrashPool : BasePool<TrashType, BaseTrash>
     public void ReturnTrash(BaseTrash trash)
     {
         if (trash == null) return;
-        ActiveTrashList.Remove(trash); // <--- ·s¼W¡G²¾¥X¬¡ÅD²M³æ
+        ActiveTrashList.Remove(trash); // <--- ï¿½sï¿½Wï¿½Gï¿½ï¿½ï¿½Xï¿½ï¿½ï¿½Dï¿½Mï¿½ï¿½
         Return(trash.trashType, trash);
     }
 }

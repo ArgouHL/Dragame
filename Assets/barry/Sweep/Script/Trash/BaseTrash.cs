@@ -5,10 +5,13 @@ public class BaseTrash : BasePoolItem
 {
     [SerializeField] protected float absorbEffectDuration;
     [SerializeField] protected float rotationSpeed;
+
     [Header("縮小(消退)速率曲線")]
     [SerializeField] protected AnimationCurve scaleCurve;
+
     [Header("移動設定速率曲線")]
     [SerializeField] protected AnimationCurve moveCurve;
+
     [SerializeField] public TrashType trashType;
 
     [Header("手動物理設定")]
@@ -18,19 +21,20 @@ public class BaseTrash : BasePoolItem
     [SerializeField] private float broomForce;
     [SerializeField] private float trashForce;
 
+    [Header("重量設定 (越大越重)")]
+    [SerializeField, Min(0.01f)] private float wieght = 1f;   // 按你的要求命名：wieght
+
     [Header("連鎖碰撞設定")]
     [SerializeField] private float collisionCheckRadius;
     [SerializeField] private float hitCooldown;
     [SerializeField] private float collisionDamping;
     [SerializeField] private float minCollisionSpeed;
-    [SerializeField] private float weight;
-    [SerializeField] private float collisionRestitution;
 
-   /* [Header("睡眠（停止運算）設定")]
+    [Header("睡眠（停止運算）設定")]
     [SerializeField] private float sleepSpeedThreshold;
-    [SerializeField] private float sleepTime;*/
+    [SerializeField] private float sleepTime;
 
-    [Header("多邊形碰撞形狀（local 空間，可選）")]
+    [Header("多邊形碰撞形狀 (local 空間，可選)")]
     [SerializeField] private List<Vector2> collisionPolygon;
 
     public bool IsAbsorbing { get; private set; }
@@ -39,19 +43,27 @@ public class BaseTrash : BasePoolItem
     public float RotationSpeed => rotationSpeed;
     public AnimationCurve ScaleCurve => scaleCurve;
     public AnimationCurve MoveCurve => moveCurve;
-    public float Weight => weight;
+
+    public float Wieght => wieght;
+    public float InvWieght => 1f / wieght;
 
     private bool _isRecentlyHit;
     private float _hitCooldownTimer;
- //   private bool _isSleeping;
-  //  private float _sleepTimer;
+    private bool _isSleeping;
+    private float _sleepTimer;
+
     private readonly List<BaseTrash> _nearbyTrash = new List<BaseTrash>(32);
     private Collider2D[] _colliders;
-    private float _collisionRadius;
+
+    private float cachedRadius;
+
+    [Header("调试设置")]
+    [SerializeField] private bool debugCollision = true;
+    [SerializeField] private bool debugVelocity = true;
 
     protected virtual void FixedUpdate()
     {
-        if (IsAbsorbing ) return;
+        if (IsAbsorbing || _isSleeping) return;
 
         if (_isRecentlyHit)
         {
@@ -60,11 +72,54 @@ public class BaseTrash : BasePoolItem
         }
 
         HandleMovement();
-        //HandleSleepCheck();
+        HandleSleepCheck();
+    }
+
+    private float GetCollisionRadius()
+    {
+        if (cachedRadius > 0f) return cachedRadius;
+
+        if (UsePolygon())
+        {
+            float max = 0f;
+            for (int i = 0; i < collisionPolygon.Count; i++)
+            {
+                float sq = collisionPolygon[i].sqrMagnitude;
+                if (sq > max) max = sq;
+            }
+
+            cachedRadius = Mathf.Sqrt(max);
+        }
+        else
+        {
+            cachedRadius = collisionCheckRadius;
+        }
+
+        return cachedRadius;
+    }
+
+    private bool UsePolygon() =>
+        collisionPolygon != null && collisionPolygon.Count >= 3;
+
+#if UNITY_EDITOR
+    private void OnValidate() => cachedRadius = 0f;
+#endif
+
+    private void ApplyImpulse(Vector2 impulse)
+    {
+        // impulse 視為「衝量」，重量越大（wieght 越大）速度增量越小
+        currentVelocity += impulse * InvWieght;
     }
 
     private void HandleMovement()
     {
+        float radius = GetCollisionRadius();
+
+        if (debugVelocity && currentVelocity.sqrMagnitude > 0.01f)
+        {
+            Debug.Log($"{name} 速度: {currentVelocity.magnitude:F3}, 方向: {currentVelocity.normalized}");
+        }
+
         if (currentVelocity.sqrMagnitude < 0.0001f)
         {
             currentVelocity = Vector2.zero;
@@ -73,7 +128,7 @@ public class BaseTrash : BasePoolItem
         }
 
         float remainingTime = Time.fixedDeltaTime;
-        float maxStepDist = GetCollisionRadius() * 0.5f;
+        float maxStepDist = radius * 0.5f;
         Vector2 currentPos = transform.position;
 
         while (remainingTime > 0f)
@@ -98,7 +153,13 @@ public class BaseTrash : BasePoolItem
 
             Vector2 targetPos = currentPos + stepDelta;
             float moveDist = stepMag;
+
+            if (debugCollision)
+                Debug.Log($"{name} 检查碰撞: 从 {currentPos} 到 {targetPos}, 距离: {moveDist:F3}");
+
             bool hasCollision = CheckPathCollision(currentPos, targetPos, ref moveDist, out BaseTrash hitTrash);
+
+            Debug.Log("hascollision  " + hasCollision);
 
             if (moveDist > 0f)
             {
@@ -113,43 +174,51 @@ public class BaseTrash : BasePoolItem
                 if (hitDir.sqrMagnitude < 0.0001f) hitDir = Random.insideUnitCircle;
                 hitDir.Normalize();
 
-                float w1 = Mathf.Max(Weight, 0.0001f);
-                float w2 = Mathf.Max(hitTrash.Weight, 0.0001f);
+                Vector2 relVel = currentVelocity - hitTrash.CurrentVelocity;
+                float relSpeed = Vector2.Dot(relVel, hitDir);
 
-                Vector2 v1 = currentVelocity;
-                Vector2 v2 = hitTrash.currentVelocity;
-
-                Vector2 relVel = v1 - v2;
-                float relSpeedN = Vector2.Dot(relVel, hitDir);
-
-                if (relSpeedN > minCollisionSpeed)
+                if (debugCollision)
                 {
-                    float e = Mathf.Clamp01(collisionRestitution);
-                    float invW1 = 1f / w1;
-                    float invW2 = 1f / w2;
+                    Debug.Log($"{name} 进入垃圾碰撞检测");
+                    Debug.Log($"  与 {hitTrash.name} 相对速度: {relSpeed:F3}, minCollisionSpeed: {minCollisionSpeed}");
+                    Debug.Log($"  自己速度: {currentVelocity.magnitude:F3}, 对方速度: {hitTrash.CurrentVelocity.magnitude:F3}");
+                    Debug.Log($"  自己 wieght: {wieght:F3}, 对方 wieght: {hitTrash.Wieght:F3}");
+                }
 
-                    float j = -(1f + e) * relSpeedN / (invW1 + invW2);
-                    Vector2 impulse = j * hitDir;
+                if (relSpeed > minCollisionSpeed)
+                {
+                    if (debugCollision)
+                        Debug.Log($"{name} 垃圾碰撞条件满足，处理碰撞(相对速度 + 重量)");
 
-                    v1 += impulse * invW1;
-                    v2 -= impulse * invW2;
+                    ResolveTrashCollision(hitTrash, hitDir);
 
-                    v1 *= collisionDamping;
-                    v2 *= hitTrash.collisionDamping;
-
-                    currentVelocity = v1;
-                    hitTrash.currentVelocity = v2;
-
-                    //WakeUp();
-                   // hitTrash.WakeUp();
                     StartHitCooldownTimer();
                     hitTrash.StartHitCooldownTimer();
+
+                    if (debugCollision)
+                        Debug.Log($"{name} 碰撞处理完成，新速度: {currentVelocity.magnitude:F3}");
                 }
+                else
+                {
+                    if (debugCollision)
+                        Debug.Log($"{name} 相对速度不足，跳过碰撞");
+                }
+            }
+            else if (hasCollision && hitTrash != null && hitTrash._isRecentlyHit)
+            {
+                if (debugCollision)
+                    Debug.Log($"{name} 对方 {hitTrash.name} 在冷却中，跳过碰撞");
+            }
+            else if (!hasCollision && debugCollision && _nearbyTrash.Count > 0)
+            {
+                Debug.Log($"{name} 有周围垃圾但未检测到碰撞，周围垃圾数: {_nearbyTrash.Count}");
             }
 
             HandleBoundaryCheck();
 
-            currentVelocity = Vector2.Lerp(currentVelocity, Vector2.zero, deceleration * stepTime);
+            float t = Mathf.Clamp01((deceleration * stepTime) * InvWieght);
+            currentVelocity = Vector2.Lerp(currentVelocity, Vector2.zero, t);
+
             remainingTime -= stepTime;
 
             if (currentVelocity.sqrMagnitude < 0.000001f)
@@ -162,13 +231,43 @@ public class BaseTrash : BasePoolItem
         ResolveOverlap();
     }
 
+    private void ResolveTrashCollision(BaseTrash other, Vector2 normal)
+    {
+        normal.Normalize();
+
+        Vector2 v1 = currentVelocity;
+        Vector2 v2 = other.currentVelocity;
+
+        Vector2 relVel = v1 - v2;
+
+        float relSpeedN = Vector2.Dot(relVel, normal);
+        if (relSpeedN <= minCollisionSpeed) return;
+
+        float e = Mathf.Clamp01(collisionDamping);
+
+        float invSum = InvWieght + other.InvWieght;
+        if (invSum <= 0f) return;
+
+        float j = (1f + e) * relSpeedN / invSum;
+
+        currentVelocity = v1 - (j * InvWieght) * normal;
+        other.currentVelocity = v2 + (j * other.InvWieght) * normal;
+    }
+
     private bool CheckPathCollision(Vector2 start, Vector2 end, ref float moveDist, out BaseTrash hitTrash)
     {
         hitTrash = null;
 
         SpatialGridManager.Instance.GetTrashAroundPosition(start, _nearbyTrash);
 
+        Debug.Log($"{name} 检查路径碰撞，周围垃圾数量: {_nearbyTrash.Count}");
+
         if (_nearbyTrash.Count == 0) return false;
+
+        float r1 = GetCollisionRadius();
+
+        if (debugCollision)
+            Debug.Log($"{name} 碰撞半径: {r1}");
 
         Vector2 dir = end - start;
         float len = dir.magnitude;
@@ -182,33 +281,74 @@ public class BaseTrash : BasePoolItem
         for (int i = 0; i < _nearbyTrash.Count; i++)
         {
             var trash = _nearbyTrash[i];
-            if (trash == null || trash == this || trash.IsAbsorbing || trash._isRecentlyHit) continue;
 
-            float r1 = GetCollisionRadius();
+            if (debugCollision && trash != null)
+            {
+                Debug.Log($"  检查垃圾 {trash.name}: ");
+                Debug.Log($"    IsAbsorbing: {trash.IsAbsorbing}");
+                Debug.Log($"    _isRecentlyHit: {trash._isRecentlyHit}");
+                Debug.Log($"    位置: {trash.transform.position}");
+                Debug.Log($"    碰撞半径: {trash.GetCollisionRadius()}");
+                Debug.Log($"    wieght: {trash.Wieght}");
+            }
+
+            if (trash == null || trash == this || trash.IsAbsorbing || trash._isRecentlyHit)
+            {
+                if (debugCollision && trash != null && trash != this)
+                    Debug.Log($"  跳过垃圾 {trash.name} (条件不满足)");
+                continue;
+            }
+
             float r2 = trash.GetCollisionRadius();
-            float combinedRadius = r1 + r2;
-            float combinedRadiusSqr = combinedRadius * combinedRadius;
+            float combined = r1 + r2;
+            float combinedSqr = combined * combined;
 
             Vector2 trashPos = trash.transform.position;
             Vector2 toTrash = trashPos - start;
 
+           
+              
+
             float proj = Vector2.Dot(toTrash, dir);
-            if (proj < 0f || proj > maxTravel + combinedRadius) continue;
+            if (proj < 0f || proj > maxTravel + combined)
+            {
+                if (debugCollision)
+                   
+                continue;
+            }
 
-            float sqDistToLine = toTrash.sqrMagnitude - proj * proj;
-            if (sqDistToLine > combinedRadiusSqr) continue;
+            float sqLine = toTrash.sqrMagnitude - proj * proj;
+            if (sqLine > combinedSqr)
+            {
+                if (debugCollision)
+                    Debug.Log($"  垂直距离平方 {sqLine} > 碰撞半径平方 {combinedSqr}");
+                continue;
+            }
 
-            float offset = Mathf.Sqrt(Mathf.Max(combinedRadiusSqr - sqDistToLine, 0f));
+            float offset = Mathf.Sqrt(Mathf.Max(combinedSqr - sqLine, 0f));
             float hitAlong = proj - offset;
             if (hitAlong < 0f) hitAlong = proj;
 
-            if (hitAlong < 0f || hitAlong > bestDist) continue;
+            if (hitAlong < 0f || hitAlong > bestDist)
+            {
+                if (debugCollision)
+                    Debug.Log($"  碰撞距离 {hitAlong} 不在最佳距离范围内");
+                continue;
+            }
 
             bestDist = hitAlong;
             hitTrash = trash;
+
+            if (debugCollision)
+                Debug.Log($"  找到碰撞: 与 {hitTrash.name} 在距离 {bestDist} 处");
         }
 
-        if (hitTrash == null) return false;
+        if (hitTrash == null)
+        {
+            if (debugCollision)
+                Debug.Log($"  未找到碰撞");
+            return false;
+        }
 
         moveDist = Mathf.Max(0f, bestDist);
         return true;
@@ -216,8 +356,7 @@ public class BaseTrash : BasePoolItem
 
     private void ResolveOverlap()
     {
-        if (SpatialGridManager.Instance == null) return;
-        if (GetCollisionRadius() <= 0f) return;
+        float r1 = GetCollisionRadius();
 
         SpatialGridManager.Instance.GetTrashAroundPosition(transform.position, _nearbyTrash);
         if (_nearbyTrash.Count == 0) return;
@@ -229,7 +368,6 @@ public class BaseTrash : BasePoolItem
             var trash = _nearbyTrash[i];
             if (trash == null || trash == this || trash.IsAbsorbing) continue;
 
-            float r1 = GetCollisionRadius();
             float r2 = trash.GetCollisionRadius();
             float minDist = r1 + r2;
             float minDistSqr = minDist * minDist;
@@ -248,7 +386,33 @@ public class BaseTrash : BasePoolItem
         transform.position = pos;
     }
 
-  /*  private void HandleSleepCheck()
+    public void ApplyBroomHit(Vector2 hitDirection, float power)
+    {
+        if (IsAbsorbing) return;
+
+        WakeUp();
+        StartHitCooldownTimer();
+
+        Vector2 impulse = hitDirection.normalized * (broomForce * power);
+        ApplyImpulse(impulse);
+    }
+
+    public void ApplyTrashHit(Vector2 hitDirection, float strength01)
+    {
+        if (IsAbsorbing) return;
+
+        WakeUp();
+        StartHitCooldownTimer();
+
+        float impulseMag = trashForce * Mathf.Clamp01(strength01);
+        Vector2 impulse = hitDirection.normalized * impulseMag;
+
+        ApplyImpulse(impulse);
+
+        currentVelocity *= collisionDamping;
+    }
+
+    private void HandleSleepCheck()
     {
         float speed = currentVelocity.magnitude;
         if (speed < sleepSpeedThreshold && speed > 0f)
@@ -270,7 +434,7 @@ public class BaseTrash : BasePoolItem
     {
         _isSleeping = false;
         _sleepTimer = 0f;
-    }*/
+    }
 
     private void HandleBoundaryCheck()
     {
@@ -283,33 +447,37 @@ public class BaseTrash : BasePoolItem
         currentVelocity = vel;
     }
 
-    public void ApplyBroomHit(Vector2 hitDirection, float power)
-    {
-        if (IsAbsorbing) return;
-        //WakeUp();
-        StartHitCooldownTimer();
-
-        float w = Mathf.Max(Weight, 0.0001f);
-        float speed = broomForce * power / w;
-        currentVelocity = hitDirection.normalized * speed;
-    }
-
-    public void ApplyTrashHit(Vector2 hitDirection, float strength01)
-    {
-        if (IsAbsorbing) return;
-        //WakeUp();
-        StartHitCooldownTimer();
-
-        float w = Mathf.Max(Weight, 0.0001f);
-        float addSpeed = trashForce * Mathf.Clamp01(strength01) / w;
-        currentVelocity += hitDirection.normalized * addSpeed;
-        currentVelocity *= collisionDamping;
-    }
-
     private void StartHitCooldownTimer()
     {
         _isRecentlyHit = true;
         _hitCooldownTimer = hitCooldown;
+    }
+
+    public void OnEnterBlackHole()
+    {
+        if (IsAbsorbing) return;
+
+        IsAbsorbing = true;
+        _isSleeping = false;
+        currentVelocity = Vector2.zero;
+        SetCollidersEnabled(false);
+
+        // ===== 這行是新增：黑洞吸入時 x++（只會觸發一次，因為上面 IsAbsorbing guard）=====
+        TrashCounter.MarkCollected(this);
+    }
+
+    public override void ResetState()
+    {
+        base.ResetState();
+        currentVelocity = Vector2.zero;
+        IsAbsorbing = false;
+        transform.localScale = initialScale;
+        _isRecentlyHit = false;
+        _hitCooldownTimer = 0f;
+        _isSleeping = false;
+        _sleepTimer = 0f;
+        cachedRadius = 0f;
+        SetCollidersEnabled(true);
     }
 
     private void EnsureColliders()
@@ -327,68 +495,6 @@ public class BaseTrash : BasePoolItem
                 _colliders[i].enabled = enabled;
         }
     }
-
-    public void OnEnterBlackHole()
-    {
-        if (IsAbsorbing) return;
-
-        IsAbsorbing = true;
-        //_isSleeping = false;
-        currentVelocity = Vector2.zero;
-        SetCollidersEnabled(false);
-    }
-
-    public override void ResetState()
-    {
-        base.ResetState();
-        currentVelocity = Vector2.zero;
-        IsAbsorbing = false;
-        transform.localScale = initialScale;
-        _isRecentlyHit = false;
-        _hitCooldownTimer = 0f;
-        //_isSleeping = false;
-        //_sleepTimer = 0f;
-        _collisionRadius = 0f;
-        SetCollidersEnabled(true);
-    }
-
-    private bool UsePolygon()
-    {
-        return collisionPolygon != null && collisionPolygon.Count >= 3;
-    }
-
-    private void RecalculateCollisionRadius()
-    {
-        if (UsePolygon())
-        {
-            float maxSqr = 0f;
-            for (int i = 0; i < collisionPolygon.Count; i++)
-            {
-                float sqr = collisionPolygon[i].sqrMagnitude;
-                if (sqr > maxSqr) maxSqr = sqr;
-            }
-
-            _collisionRadius = maxSqr > 0f ? Mathf.Sqrt(maxSqr) : collisionCheckRadius;
-        }
-        else
-        {
-            _collisionRadius = collisionCheckRadius;
-        }
-    }
-
-    private float GetCollisionRadius()
-    {
-        if (_collisionRadius <= 0f)
-            RecalculateCollisionRadius();
-        return _collisionRadius;
-    }
-
-#if UNITY_EDITOR
-    private void OnValidate()
-    {
-        _collisionRadius = 0f;
-    }
-#endif
 
     private void OnDrawGizmos()
     {
@@ -409,7 +515,7 @@ public class BaseTrash : BasePoolItem
         }
         else
         {
-            Gizmos.DrawWireSphere(transform.position, GetCollisionRadius());
+            Gizmos.DrawWireSphere(transform.position, collisionCheckRadius);
         }
     }
 }

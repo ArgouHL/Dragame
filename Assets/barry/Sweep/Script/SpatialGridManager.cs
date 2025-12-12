@@ -5,7 +5,7 @@ public class SpatialGridManager : MonoBehaviour
 {
     public static SpatialGridManager Instance { get; private set; }
 
-    [Header("ºô®æ³]©w")]
+    [Header("ï¿½ï¿½ï¿½ï¿½]ï¿½w")]
     public float cellSize = 2.0f;
 
     private readonly Dictionary<Vector2Int, List<BaseTrash>> grid = new Dictionary<Vector2Int, List<BaseTrash>>();
@@ -15,10 +15,12 @@ public class SpatialGridManager : MonoBehaviour
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
     }
+    
+
 
     public void UpdateGrid(List<BaseTrash> activeTrashList)
     {
-        // ²MªÅ²{¦³ºô®æ¡A¦ý«O¯d¦r¨åÁä¡]Àu¤Æ­«¥Î¦Cªí¡^
+        // ï¿½Mï¿½Å²{ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½Oï¿½dï¿½rï¿½ï¿½ï¿½ï¿½]ï¿½uï¿½Æ­ï¿½ï¿½Î¦Cï¿½ï¿½ï¿½^
         foreach (var kv in grid)
         {
             kv.Value.Clear();
@@ -50,7 +52,7 @@ public class SpatialGridManager : MonoBehaviour
         buffer.Clear();
         Vector2Int centerCell = GetCellPos(position);
 
-        // ÀË¬d¤¤¤ßºô®æ¤Î¨ä©P³ò 8 ­Óºô®æ¡]3x3 ½d³ò¡^
+        // ï¿½Ë¬dï¿½ï¿½ï¿½ßºï¿½ï¿½ï¿½Î¨ï¿½Pï¿½ï¿½ 8 ï¿½Óºï¿½ï¿½ï¿½]3x3 ï¿½dï¿½ï¿½^
         for (int x = -1; x <= 1; x++)
         {
             for (int y = -1; y <= 1; y++)
@@ -73,7 +75,7 @@ public class SpatialGridManager : MonoBehaviour
     }
 
 #if UNITY_EDITOR
-    // ¥i¿ï¡G½s¿è¾¹¤UÃ¸»sºô®æ Gizmos ¥H«K°£¿ù
+    // ï¿½iï¿½ï¿½Gï¿½sï¿½è¾¹ï¿½UÃ¸ï¿½sï¿½ï¿½ï¿½ï¿½ Gizmos ï¿½Hï¿½Kï¿½ï¿½ï¿½ï¿½
     private void OnDrawGizmos()
     {
         if (!Application.isPlaying) return;
