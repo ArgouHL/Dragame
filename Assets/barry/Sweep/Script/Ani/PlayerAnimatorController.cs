@@ -7,7 +7,7 @@ public class PlayerAnimatorController : MonoBehaviour
     public PlayerStateMachine stateMachine { get; private set; }
     public PlayerMoveState moveState { get; private set; }
 
-   
+   public RightClickState rightClickState { get; private set; }
     
     public static PlayerAnimatorController instance;
     public PlayerIdleState idleState { get; private set; }
@@ -28,6 +28,7 @@ public class PlayerAnimatorController : MonoBehaviour
     {
         idleState = new PlayerIdleState("Idle", this, stateMachine);
         moveState = new PlayerMoveState("Move", this, stateMachine);
+        rightClickState=new RightClickState("RightClick", this, stateMachine);
         stateMachine.Initialize(idleState);
 
     }

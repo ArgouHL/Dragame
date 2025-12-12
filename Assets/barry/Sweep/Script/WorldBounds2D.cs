@@ -264,4 +264,69 @@ public class WorldBounds2D : MonoBehaviour
             }
         }
     }
+        public bool TryGetHitPointAndNormalWorld(Vector2 worldPos, out Vector2 hitPoint, out Vector2 hitNormalWorld, float padding = 0f)
+    {
+        hitPoint = worldPos;
+        hitNormalWorld = Vector2.up;
+
+        if (!cam) return false;
+
+        Vector3 vp3 = cam.WorldToViewportPoint(worldPos);
+        Vector2 vp = new Vector2(vp3.x, vp3.y);
+
+        Vector2 closestVp;
+        Vector2 normalVp;
+
+        if (UsePolygon())
+        {
+            if (IsPointInPolygon(vp, viewportPolygon)) return false;
+
+            FindClosestPointAndNormal(vp, viewportPolygon, out closestVp, out normalVp);
+
+            // normalVp：FindClosestPointAndNormal 算的是邊的法線（方向可能兩邊）
+            // 我們要「指向物體」的法線：從邊界點指向外面（vp - closest）
+            Vector2 towardObj = vp - closestVp;
+            if (towardObj.sqrMagnitude > 1e-8f)
+                normalVp = towardObj.normalized;
+        }
+        else
+        {
+            float minXPad = minX + padding;
+            float maxXPad = maxX - padding;
+            float minYPad = minY + padding;
+            float maxYPad = maxY - padding;
+
+            bool outside = (vp.x < minXPad || vp.x > maxXPad || vp.y < minYPad || vp.y > maxYPad);
+            if (!outside) return false;
+
+            closestVp = new Vector2(Mathf.Clamp(vp.x, minXPad, maxXPad), Mathf.Clamp(vp.y, minYPad, maxYPad));
+            Vector2 towardObj = vp - closestVp;
+
+            if (towardObj.sqrMagnitude > 1e-8f)
+            {
+                normalVp = towardObj.normalized;
+            }
+            else
+            {
+                // 理論上不太會到這裡，保底：依超出的那一側給法線
+                if (vp.x < minXPad) normalVp = Vector2.left;
+                else if (vp.x > maxXPad) normalVp = Vector2.right;
+                else if (vp.y < minYPad) normalVp = Vector2.down;
+                else normalVp = Vector2.up;
+            }
+        }
+
+        // 把 viewport 的邊界點轉回世界座標
+        Vector3 w0 = cam.ViewportToWorldPoint(new Vector3(closestVp.x, closestVp.y, vp3.z));
+        hitPoint = new Vector2(w0.x, w0.y);
+
+        // 把 viewport 的法線轉成世界方向（用兩點差分，適用 ortho/persp）
+        const float eps = 0.01f;
+        Vector3 w1 = cam.ViewportToWorldPoint(new Vector3(closestVp.x + normalVp.x * eps, closestVp.y + normalVp.y * eps, vp3.z));
+        Vector2 nW = new Vector2(w1.x - w0.x, w1.y - w0.y);
+        if (nW.sqrMagnitude > 1e-8f) hitNormalWorld = nW.normalized;
+
+        return true;
+    }
 }
+

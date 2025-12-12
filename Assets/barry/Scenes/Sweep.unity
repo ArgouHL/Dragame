@@ -268,7 +268,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: -2
-  m_Sprite: {fileID: 21300000, guid: 0fd5b3e2448d3a246b7cab727bdaa0db, type: 3}
+  m_Sprite: {fileID: 21300000, guid: ffbe989975cc34a4092356d0f7d40a21, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -1942,11 +1942,15 @@ MonoBehaviour:
   fixForWall: {x: 0, y: -1}
   rb: {fileID: 0}
   dragLine: {fileID: 651744099}
+  particleSystems:
+  - {fileID: 3619812365905231292, guid: 675f8c4f6e928ee4fa0f6162dc0c6891, type: 3}
+  - {fileID: 1157877447285054527, guid: 372bded14f34a674a84f8f18bd705af5, type: 3}
+  - {fileID: 5342360048591732933, guid: 20e1bfdb15ee48540b6e739fb3a0ca5f, type: 3}
   maxSpeed: 12
   deceleration: 8
   isBlocking: 0
-  sweepRadius: 0.5
-  sweepOffset: {x: 0.06, y: -0.95}
+  sweepRadius: 0.66
+  sweepOffset: {x: 0.12, y: -1.4}
   maxChargeTime: 1.5
   chargeCenterOffset: 0
   wieght: 3
@@ -1958,6 +1962,11 @@ MonoBehaviour:
   isBeingAbsorbed: 0
   chargedSweepMesh: {fileID: 1717785076}
   chargedSweepRotationOffset: -90
+  trailRateMax: 60
+  trailMinPowerToPlay: 0.01
+  trailStartBurst: 8
+  poolSizeTrashHit: 10
+  poolSizeWallHit: 10
 --- !u!114 &1611628281
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2072,8 +2081,8 @@ CircleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: -1.01}
-  m_Radius: 0.5
+  m_Offset: {x: 0, y: -1.31}
+  m_Radius: 0.71
 --- !u!1 &1632655380
 GameObject:
   m_ObjectHideFlags: 0
@@ -2645,8 +2654,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.2, y: 0.2, z: 0.2}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 1611628277}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

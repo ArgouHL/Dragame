@@ -22,7 +22,7 @@ public class BaseTrash : BasePoolItem
     [SerializeField] private float trashForce;
 
     [Header("重量設定 (越大越重)")]
-    [SerializeField, Min(0.01f)] private float wieght = 1f;   // 按你的要求命名：wieght
+    [SerializeField, Min(0.01f)] private float wieght = 1f;
 
     [Header("連鎖碰撞設定")]
     [SerializeField] private float collisionCheckRadius;
@@ -58,8 +58,17 @@ public class BaseTrash : BasePoolItem
     private float cachedRadius;
 
     [Header("调试设置")]
-    [SerializeField] private bool debugCollision = true;
-    [SerializeField] private bool debugVelocity = true;
+    [SerializeField] private bool debugCollision = false;
+    [SerializeField] private bool debugVelocity = false;
+
+#if UNITY_EDITOR
+    private void DLog(string msg)
+    {
+        if (debugCollision) Debug.Log(msg);
+    }
+#else
+    private void DLog(string msg) { }
+#endif
 
     protected virtual void FixedUpdate()
     {
@@ -87,7 +96,6 @@ public class BaseTrash : BasePoolItem
                 float sq = collisionPolygon[i].sqrMagnitude;
                 if (sq > max) max = sq;
             }
-
             cachedRadius = Mathf.Sqrt(max);
         }
         else
@@ -107,7 +115,6 @@ public class BaseTrash : BasePoolItem
 
     private void ApplyImpulse(Vector2 impulse)
     {
-        // impulse 視為「衝量」，重量越大（wieght 越大）速度增量越小
         currentVelocity += impulse * InvWieght;
     }
 
@@ -115,10 +122,10 @@ public class BaseTrash : BasePoolItem
     {
         float radius = GetCollisionRadius();
 
+#if UNITY_EDITOR
         if (debugVelocity && currentVelocity.sqrMagnitude > 0.01f)
-        {
-            Debug.Log($"{name} 速度: {currentVelocity.magnitude:F3}, 方向: {currentVelocity.normalized}");
-        }
+            Debug.Log($"{name} v={currentVelocity.magnitude:F3}, dir={currentVelocity.normalized}");
+#endif
 
         if (currentVelocity.sqrMagnitude < 0.0001f)
         {
@@ -154,12 +161,7 @@ public class BaseTrash : BasePoolItem
             Vector2 targetPos = currentPos + stepDelta;
             float moveDist = stepMag;
 
-            if (debugCollision)
-                Debug.Log($"{name} 检查碰撞: 从 {currentPos} 到 {targetPos}, 距离: {moveDist:F3}");
-
             bool hasCollision = CheckPathCollision(currentPos, targetPos, ref moveDist, out BaseTrash hitTrash);
-
-            Debug.Log("hascollision  " + hasCollision);
 
             if (moveDist > 0f)
             {
@@ -177,41 +179,12 @@ public class BaseTrash : BasePoolItem
                 Vector2 relVel = currentVelocity - hitTrash.CurrentVelocity;
                 float relSpeed = Vector2.Dot(relVel, hitDir);
 
-                if (debugCollision)
-                {
-                    Debug.Log($"{name} 进入垃圾碰撞检测");
-                    Debug.Log($"  与 {hitTrash.name} 相对速度: {relSpeed:F3}, minCollisionSpeed: {minCollisionSpeed}");
-                    Debug.Log($"  自己速度: {currentVelocity.magnitude:F3}, 对方速度: {hitTrash.CurrentVelocity.magnitude:F3}");
-                    Debug.Log($"  自己 wieght: {wieght:F3}, 对方 wieght: {hitTrash.Wieght:F3}");
-                }
-
                 if (relSpeed > minCollisionSpeed)
                 {
-                    if (debugCollision)
-                        Debug.Log($"{name} 垃圾碰撞条件满足，处理碰撞(相对速度 + 重量)");
-
                     ResolveTrashCollision(hitTrash, hitDir);
-
                     StartHitCooldownTimer();
                     hitTrash.StartHitCooldownTimer();
-
-                    if (debugCollision)
-                        Debug.Log($"{name} 碰撞处理完成，新速度: {currentVelocity.magnitude:F3}");
                 }
-                else
-                {
-                    if (debugCollision)
-                        Debug.Log($"{name} 相对速度不足，跳过碰撞");
-                }
-            }
-            else if (hasCollision && hitTrash != null && hitTrash._isRecentlyHit)
-            {
-                if (debugCollision)
-                    Debug.Log($"{name} 对方 {hitTrash.name} 在冷却中，跳过碰撞");
-            }
-            else if (!hasCollision && debugCollision && _nearbyTrash.Count > 0)
-            {
-                Debug.Log($"{name} 有周围垃圾但未检测到碰撞，周围垃圾数: {_nearbyTrash.Count}");
             }
 
             HandleBoundaryCheck();
@@ -239,7 +212,6 @@ public class BaseTrash : BasePoolItem
         Vector2 v2 = other.currentVelocity;
 
         Vector2 relVel = v1 - v2;
-
         float relSpeedN = Vector2.Dot(relVel, normal);
         if (relSpeedN <= minCollisionSpeed) return;
 
@@ -259,15 +231,9 @@ public class BaseTrash : BasePoolItem
         hitTrash = null;
 
         SpatialGridManager.Instance.GetTrashAroundPosition(start, _nearbyTrash);
-
-        Debug.Log($"{name} 检查路径碰撞，周围垃圾数量: {_nearbyTrash.Count}");
-
         if (_nearbyTrash.Count == 0) return false;
 
         float r1 = GetCollisionRadius();
-
-        if (debugCollision)
-            Debug.Log($"{name} 碰撞半径: {r1}");
 
         Vector2 dir = end - start;
         float len = dir.magnitude;
@@ -281,23 +247,8 @@ public class BaseTrash : BasePoolItem
         for (int i = 0; i < _nearbyTrash.Count; i++)
         {
             var trash = _nearbyTrash[i];
-
-            if (debugCollision && trash != null)
-            {
-                Debug.Log($"  检查垃圾 {trash.name}: ");
-                Debug.Log($"    IsAbsorbing: {trash.IsAbsorbing}");
-                Debug.Log($"    _isRecentlyHit: {trash._isRecentlyHit}");
-                Debug.Log($"    位置: {trash.transform.position}");
-                Debug.Log($"    碰撞半径: {trash.GetCollisionRadius()}");
-                Debug.Log($"    wieght: {trash.Wieght}");
-            }
-
             if (trash == null || trash == this || trash.IsAbsorbing || trash._isRecentlyHit)
-            {
-                if (debugCollision && trash != null && trash != this)
-                    Debug.Log($"  跳过垃圾 {trash.name} (条件不满足)");
                 continue;
-            }
 
             float r2 = trash.GetCollisionRadius();
             float combined = r1 + r2;
@@ -306,49 +257,27 @@ public class BaseTrash : BasePoolItem
             Vector2 trashPos = trash.transform.position;
             Vector2 toTrash = trashPos - start;
 
-           
-              
-
             float proj = Vector2.Dot(toTrash, dir);
             if (proj < 0f || proj > maxTravel + combined)
-            {
-                if (debugCollision)
-                   
                 continue;
-            }
 
             float sqLine = toTrash.sqrMagnitude - proj * proj;
             if (sqLine > combinedSqr)
-            {
-                if (debugCollision)
-                    Debug.Log($"  垂直距离平方 {sqLine} > 碰撞半径平方 {combinedSqr}");
                 continue;
-            }
 
             float offset = Mathf.Sqrt(Mathf.Max(combinedSqr - sqLine, 0f));
             float hitAlong = proj - offset;
             if (hitAlong < 0f) hitAlong = proj;
 
             if (hitAlong < 0f || hitAlong > bestDist)
-            {
-                if (debugCollision)
-                    Debug.Log($"  碰撞距离 {hitAlong} 不在最佳距离范围内");
                 continue;
-            }
 
             bestDist = hitAlong;
             hitTrash = trash;
-
-            if (debugCollision)
-                Debug.Log($"  找到碰撞: 与 {hitTrash.name} 在距离 {bestDist} 处");
         }
 
         if (hitTrash == null)
-        {
-            if (debugCollision)
-                Debug.Log($"  未找到碰撞");
             return false;
-        }
 
         moveDist = Mathf.Max(0f, bestDist);
         return true;
@@ -386,16 +315,36 @@ public class BaseTrash : BasePoolItem
         transform.position = pos;
     }
 
+    // ===========================
+    // ① 垃圾撞掃把：在掃到垃圾那刻呼叫（你原本就會呼叫 ApplyBroomHit）
+    // 這裡直接做「撞擊點」估算並觸發 PlayerController 粒子 [0]
+    // ===========================
     public void ApplyBroomHit(Vector2 hitDirection, float power)
     {
         if (IsAbsorbing) return;
 
+        // 防止同一顆垃圾被連續每幀掃到狂噴特效（用你原本 hitCooldown）
+        if (_isRecentlyHit) return;
+
         WakeUp();
         StartHitCooldownTimer();
 
-        Vector2 impulse = hitDirection.normalized * (broomForce * power);
+        Vector2 dir = hitDirection.sqrMagnitude > 0.0001f ? hitDirection.normalized : Vector2.right;
+
+        // 撞擊點（在垃圾表面、面向掃把那一側）
+        float r = GetCollisionRadius();
+        Vector2 hitPoint = (Vector2)transform.position - dir * r;
+
+        // 法線朝向掃把（依你的特效朝向設計，如果你特效要朝外可改成 dir）
+        Vector2 hitNormal = -dir;
+
+        if (PlayerController.instance != null)
+            PlayerController.instance.EmitTrashHit(hitPoint, hitNormal);
+
+        Vector2 impulse = dir * (broomForce * power);
         ApplyImpulse(impulse);
     }
+
 
     public void ApplyTrashHit(Vector2 hitDirection, float strength01)
     {
@@ -405,10 +354,9 @@ public class BaseTrash : BasePoolItem
         StartHitCooldownTimer();
 
         float impulseMag = trashForce * Mathf.Clamp01(strength01);
-        Vector2 impulse = hitDirection.normalized * impulseMag;
+        Vector2 impulse = hitDirection.sqrMagnitude > 0.0001f ? hitDirection.normalized * impulseMag : Vector2.right * impulseMag;
 
         ApplyImpulse(impulse);
-
         currentVelocity *= collisionDamping;
     }
 
@@ -436,15 +384,33 @@ public class BaseTrash : BasePoolItem
         _sleepTimer = 0f;
     }
 
+    // ===========================
+    // ③ 撞牆：垃圾靠 WorldBounds2D Bounce
+    // 沒有精準 contact point 時，以 Bounce 後位置近似 + 以碰撞前速度反推法線
+    // ===========================
     private void HandleBoundaryCheck()
     {
         if (WorldBounds2D.Instance == null) return;
 
         Vector2 pos = transform.position;
         Vector2 vel = currentVelocity;
+
+        Vector2 posBefore = pos;
+        Vector2 velBefore = vel;
+
         WorldBounds2D.Instance.Bounce(ref pos, ref vel, viewportPadding);
+
+        bool bounced = (vel - velBefore).sqrMagnitude > 0.000001f;
+
         transform.position = pos;
         currentVelocity = vel;
+
+        if (bounced && PlayerController.instance != null)
+        {
+            Vector2 normalOut = velBefore.sqrMagnitude > 0.0001f ? -velBefore.normalized : Vector2.up;
+            // hitPoint 用 Bounce 後的位置近似（若你想更貼牆，需要 WorldBounds2D 提供邊界資訊）
+          //  PlayerController.instance.EmitWallHit(pos, normalOut);
+        }
     }
 
     private void StartHitCooldownTimer()
@@ -462,7 +428,6 @@ public class BaseTrash : BasePoolItem
         currentVelocity = Vector2.zero;
         SetCollidersEnabled(false);
 
-        // ===== 這行是新增：黑洞吸入時 x++（只會觸發一次，因為上面 IsAbsorbing guard）=====
         TrashCounter.MarkCollected(this);
     }
 
@@ -496,6 +461,7 @@ public class BaseTrash : BasePoolItem
         }
     }
 
+#if UNITY_EDITOR
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.yellow;
@@ -518,4 +484,5 @@ public class BaseTrash : BasePoolItem
             Gizmos.DrawWireSphere(transform.position, collisionCheckRadius);
         }
     }
+#endif
 }

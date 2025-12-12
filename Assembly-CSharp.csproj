@@ -75,7 +75,6 @@
     <Compile Include="Assets\barry\Sweep\Script\WorldBounds2D.cs" />
     <Compile Include="Assets\barry\Sweep\Script\TrashCounterPresenter.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Trash\CanTrash.cs" />
-    <Compile Include="Assets\barry\Sweep\Script\BlackHole.cs" />
     <Compile Include="Assets\barry\Sweep\Script\SkillManager.cs" />
     <Compile Include="Assets\InputSystem_Actions.cs" />
     <Compile Include="Assets\TutorialInfo\Scripts\Readme.cs" />
@@ -87,8 +86,10 @@
     <Compile Include="Assets\barry\Sweep\Script\Ani\PlayerState.cs" />
     <Compile Include="Assets\barry\Sweep\Script\BalckObstacle.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Ani\PlayerAnimatorController.cs" />
+    <Compile Include="Assets\barry\Sweep\Script\Ani\PowerState.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Trash\PaperTrash.cs" />
     <Compile Include="Assets\barry\Sweep\Script\BaseObstacle.cs" />
+    <Compile Include="Assets\barry\Sweep\Script\Ani\RightClickState.cs" />
     <Compile Include="Assets\barry\Sweep\Script\BlackHoleObstacle.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Ani\PlayerIdleState.cs" />
     <Compile Include="Assets\barry\Sweep\Script\ObstaclePool.cs" />
