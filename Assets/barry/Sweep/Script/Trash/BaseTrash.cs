@@ -72,13 +72,25 @@ public class BaseTrash : BasePoolItem
 
     protected virtual void FixedUpdate()
     {
-        if (IsAbsorbing || _isSleeping) return;
+        if (IsAbsorbing) return;
 
+        // ===========================
+        // 修正點 #1：
+        // hitCooldown 倒數必須在 Sleeping 時也照樣倒數，
+        // 否則 _isSleeping 會讓 FixedUpdate 直接 return，導致 _hitCooldownTimer 永遠不變。
+        // ===========================
         if (_isRecentlyHit)
         {
             _hitCooldownTimer -= Time.fixedDeltaTime;
-            _isRecentlyHit = _hitCooldownTimer > 0f;
+            if (_hitCooldownTimer <= 0f)
+            {
+                _hitCooldownTimer = 0f;
+                _isRecentlyHit = false;
+            }
         }
+
+        // 睡眠後停止運算（但不影響上面的 hitCooldown 倒數）
+        if (_isSleeping) return;
 
         HandleMovement();
         HandleSleepCheck();
@@ -316,26 +328,28 @@ public class BaseTrash : BasePoolItem
     }
 
     // ===========================
-    // ① 垃圾撞掃把：在掃到垃圾那刻呼叫（你原本就會呼叫 ApplyBroomHit）
-    // 這裡直接做「撞擊點」估算並觸發 PlayerController 粒子 [0]
+    // ① 垃圾撞掃把
     // ===========================
     public void ApplyBroomHit(Vector2 hitDirection, float power)
     {
         if (IsAbsorbing) return;
 
-        // 防止同一顆垃圾被連續每幀掃到狂噴特效（用你原本 hitCooldown）
+        // ===========================
+        // 修正點 #2：
+        // 先 WakeUp，再判斷 _isRecentlyHit。
+        // 否則如果「睡著 + _isRecentlyHit = true」會永遠 return，沒有機會醒來。
+        // ===========================
+        WakeUp();
+
         if (_isRecentlyHit) return;
 
-        WakeUp();
         StartHitCooldownTimer();
 
         Vector2 dir = hitDirection.sqrMagnitude > 0.0001f ? hitDirection.normalized : Vector2.right;
 
-        // 撞擊點（在垃圾表面、面向掃把那一側）
         float r = GetCollisionRadius();
         Vector2 hitPoint = (Vector2)transform.position - dir * r;
 
-        // 法線朝向掃把（依你的特效朝向設計，如果你特效要朝外可改成 dir）
         Vector2 hitNormal = -dir;
 
         if (PlayerController.instance != null)
@@ -344,7 +358,6 @@ public class BaseTrash : BasePoolItem
         Vector2 impulse = dir * (broomForce * power);
         ApplyImpulse(impulse);
     }
-
 
     public void ApplyTrashHit(Vector2 hitDirection, float strength01)
     {
@@ -384,10 +397,6 @@ public class BaseTrash : BasePoolItem
         _sleepTimer = 0f;
     }
 
-    // ===========================
-    // ③ 撞牆：垃圾靠 WorldBounds2D Bounce
-    // 沒有精準 contact point 時，以 Bounce 後位置近似 + 以碰撞前速度反推法線
-    // ===========================
     private void HandleBoundaryCheck()
     {
         if (WorldBounds2D.Instance == null) return;
@@ -408,8 +417,7 @@ public class BaseTrash : BasePoolItem
         if (bounced && PlayerController.instance != null)
         {
             Vector2 normalOut = velBefore.sqrMagnitude > 0.0001f ? -velBefore.normalized : Vector2.up;
-            // hitPoint 用 Bounce 後的位置近似（若你想更貼牆，需要 WorldBounds2D 提供邊界資訊）
-          //  PlayerController.instance.EmitWallHit(pos, normalOut);
+            // PlayerController.instance.EmitWallHit(pos, normalOut);
         }
     }
 
