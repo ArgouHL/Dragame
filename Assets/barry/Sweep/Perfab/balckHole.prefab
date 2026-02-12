@@ -11,6 +11,8 @@ GameObject:
   - component: {fileID: 6805653969032756184}
   - component: {fileID: 2688806814780179076}
   - component: {fileID: 5754869622838171507}
+  - component: {fileID: 2190927143126933320}
+  - component: {fileID: 8563358709643510129}
   m_Layer: 7
   m_Name: balckHole
   m_TagString: blackHole
@@ -69,7 +71,7 @@ CircleCollider2D:
   m_CompositeOperation: 0
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
-  m_Radius: 0.78850913
+  m_Radius: 1
 --- !u!114 &5754869622838171507
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -84,7 +86,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   initialScale: {x: 1, y: 1, z: 1}
   obstacleType: 0
-  absorbRadius: 1.5
+  absorbRadius: 0.8
+  centerOffset: {x: 0, y: 0}
   trashAbsorbTime: 1
   trashRotateSpeed: 360
   trashScaleCurve:
@@ -135,14 +138,66 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  player: {fileID: 0}
   playerAbsorbTime: 0.5
   playerVanishTime: 0.5
   playerEjectDuration: 0.5
-  playerEjectSpeed: 7
+  playerEjectSpeed: 30
   playerRotateSpeed: 1
   showTriggerGizmos: 1
   triggerColor: {r: 1, g: 0.5, b: 0, a: 0.3}
+--- !u!114 &2190927143126933320
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2391840806549549466}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a58449d558ff9ea43a531cfef89f41f5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentState: 0
+  moveSpeed: 3
+  idleWaitTime: 2
+  hungerThreshold: 10
+  starvingWalkDistance: 2
+  suckingDuration: 2
+  suckingRadius: 3
+  suckForce: 10
+  trashLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  maxStomachCapacity: 5
+  trashPrefab: {fileID: 0}
+  vomitForce: 5
+--- !u!50 &8563358709643510129
+Rigidbody2D:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2391840806549549466}
+  m_BodyType: 1
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_GravityScale: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 4
 --- !u!1 &2883701614384982133
 GameObject:
   m_ObjectHideFlags: 0

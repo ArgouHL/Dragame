@@ -7,8 +7,8 @@ public class DynamicSweepMesh : MonoBehaviour
     private MeshRenderer meshRenderer;
 
     [Header("貼圖/材質")]
-    [SerializeField] private Texture2D sweepTexture;     // 拖你的 FX(2).png
-    [SerializeField] private Material overrideMaterial;  // 可選：你自訂材質
+    [SerializeField] private Texture2D sweepTexture;
+    [SerializeField] private Material overrideMaterial;
     [SerializeField] private bool createMaterialIfNull = true;
 
     [Header("渲染排序(2D 常用)")]
@@ -34,6 +34,12 @@ public class DynamicSweepMesh : MonoBehaviour
     public float CurrentRadius { get; private set; }
     public Vector2[] CurrentPath2D { get; private set; }
 
+    private Vector3[] _cachedVertices;
+    private Vector2[] _cachedPath2D;
+    private Vector2[] _cachedUVs;
+    private int[] _cachedTriangles;
+    private int _cachedSegmentCount = -1; // 用來檢查 segments 是否有變動
+
     public void UpdateShape(float t)
     {
         if (mesh == null) return;
@@ -49,16 +55,24 @@ public class DynamicSweepMesh : MonoBehaviour
         int seg = Mathf.Max(2, arcSegments);
         int vertexCount = 1 + (seg + 1);
 
-        Vector3[] vertices = new Vector3[vertexCount];
-        Vector2[] path2D = new Vector2[vertexCount];
-        Vector2[] uvs = new Vector2[vertexCount];
+        // ===只在陣列不存在或長度改變時，才分配新記憶體 ===
+        if (_cachedVertices == null || _cachedVertices.Length != vertexCount || _cachedSegmentCount != seg)
+        {
+            _cachedVertices = new Vector3[vertexCount];
+            _cachedPath2D = new Vector2[vertexCount];
+            _cachedUVs = new Vector2[vertexCount];
+            _cachedTriangles = new int[seg * 3];
 
-        // Apex
-        vertices[0] = Vector3.zero;
-        path2D[0] = Vector2.zero;
-        uvs[0] = new Vector2(0.5f, 1f); // 貼圖尖端在上方中央
+            // 讓外部也能拿到最新的陣列物件
+            CurrentPath2D = _cachedPath2D;
+            _cachedSegmentCount = seg;
+        }
 
-        // 用來把左右邊界正規化到 u=0..1
+        // Apex (頂點)
+        _cachedVertices[0] = Vector3.zero;
+        _cachedPath2D[0] = Vector2.zero;
+        _cachedUVs[0] = new Vector2(0.5f, 1f);
+
         float maxX = Mathf.Sin(halfRad) * radius;
         if (maxX < 0.0001f) maxX = 0.0001f;
 
@@ -66,52 +80,50 @@ public class DynamicSweepMesh : MonoBehaviour
         float cosR = Mathf.Cos(rot);
         float sinR = Mathf.Sin(rot);
 
-        // 弧線點：維持你原本「從上到下」的順序（half -> -half）
+        // 計算頂點資料 (直接填入快取的陣列，不產生垃圾)
         for (int i = 0; i <= seg; i++)
         {
             float tt = i / (float)seg;
             float angle = Mathf.Lerp(halfRad, -halfRad, tt);
 
-            // 讓扇形「預設朝上(+Y)」
-            // angle=0 => (0, radius)
             float x = Mathf.Sin(angle) * radius;
             float y = Mathf.Cos(angle) * radius;
 
-            // 再套一個可調旋轉
             float rx = x * cosR - y * sinR;
             float ry = x * sinR + y * cosR;
 
             int idx = 1 + i;
-            vertices[idx] = new Vector3(rx, ry, 0f);
-            path2D[idx] = new Vector2(rx, ry);
+           
+            _cachedVertices[idx].x = rx;
+            _cachedVertices[idx].y = ry;
+            _cachedVertices[idx].z = 0f;
 
-            // UV：用幾何本身去算（避免弧線被壓成直線）
-            // u：左右邊界映射到 0..1
+            _cachedPath2D[idx].x = rx;
+            _cachedPath2D[idx].y = ry;
+
             float u = 0.5f + (rx / (2f * maxX));
-
-            // v：尖端(0) -> 1，外圈(y≈radius) -> 0
-            // 這樣外圈的弧形會自然在 UV 裡形成弧形，不會拉扯
             float v = 1f - (ry / radius);
 
-            uvs[idx] = new Vector2(Mathf.Clamp01(u), Mathf.Clamp01(v));
+            _cachedUVs[idx].x = Mathf.Clamp01(u);
+            _cachedUVs[idx].y = Mathf.Clamp01(v);
         }
 
-        CurrentPath2D = path2D;
-
-        int triCount = seg;
-        int[] triangles = new int[triCount * 3];
+        // 三角形索引 
         int ti = 0;
         for (int i = 0; i < seg; i++)
         {
-            triangles[ti++] = 0;
-            triangles[ti++] = i + 1;
-            triangles[ti++] = i + 2;
+            _cachedTriangles[ti++] = 0;
+            _cachedTriangles[ti++] = i + 1;
+            _cachedTriangles[ti++] = i + 2;
         }
 
-        mesh.Clear();
-        mesh.vertices = vertices;
-        mesh.triangles = triangles;
-        mesh.uv = uvs;
+        // 更新 Mesh
+        mesh.Clear(); // 為了安全先 Clear，若確定頂點數不變可移除這行以極致優化
+        mesh.vertices = _cachedVertices;
+        mesh.triangles = _cachedTriangles;
+        mesh.uv = _cachedUVs;
+
+        
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
     }
@@ -122,7 +134,7 @@ public class DynamicSweepMesh : MonoBehaviour
         meshRenderer = GetComponent<MeshRenderer>();
 
         mesh = new Mesh { name = "SweepMesh" };
-        mesh.MarkDynamic();
+        mesh.MarkDynamic(); // 告訴 Unity 這個 Mesh 會頻繁變動
         mf.mesh = mesh;
 
         SetupRendererMaterial();
@@ -138,7 +150,6 @@ public class DynamicSweepMesh : MonoBehaviour
 
         if (sweepTexture != null)
         {
-            // 避免 UV clamp 後還因 wrap/repeat 抽到怪邊
             sweepTexture.wrapMode = TextureWrapMode.Clamp;
             sweepTexture.filterMode = FilterMode.Bilinear;
         }
