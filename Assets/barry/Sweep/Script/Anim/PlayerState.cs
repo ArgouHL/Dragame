@@ -6,6 +6,7 @@ public class PlayerState
     protected PlayerStateMachine stateMachine;
     protected PlayerController core;
 
+    protected float timer;
     protected float startTime;
     protected string animBoolName;
 

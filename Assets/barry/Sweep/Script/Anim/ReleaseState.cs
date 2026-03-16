@@ -14,7 +14,7 @@ public class ReleaseState : PlayerState
     {
         base.Enter();
 
-
+        timer = 1;
 
     }
 
@@ -27,7 +27,12 @@ public class ReleaseState : PlayerState
 
     public override void Update()
     {
+        timer -= Time.deltaTime;
 
+        if (timer <= 0f)
+        {
+            stateMachine.ChangeState(animatorController.idleState);
+        }
 
     }
 }

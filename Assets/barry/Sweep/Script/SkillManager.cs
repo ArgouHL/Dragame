@@ -56,6 +56,7 @@ public class SkillManager : MonoBehaviour
         player.OnChargedSweepUpdate += HandleChargedSweepUpdate;
         player.OnChargedSweepReleased += HandleChargedSweepReleased;
         player.OnModeChanged += HandleModeChanged;
+        player.OnAbsorbedByBlackHole += HandleAbsorbedByBlackHole;
     }
 
     private void OnDisable()
@@ -65,6 +66,7 @@ public class SkillManager : MonoBehaviour
         player.OnChargedSweepUpdate -= HandleChargedSweepUpdate;
         player.OnChargedSweepReleased -= HandleChargedSweepReleased;
         player.OnModeChanged -= HandleModeChanged;
+        player.OnAbsorbedByBlackHole -= HandleAbsorbedByBlackHole;
         ReleaseAllCapturedTrash();
     }
 
@@ -81,6 +83,23 @@ public class SkillManager : MonoBehaviour
         }
     }
 
+    private void HandleAbsorbedByBlackHole(BlackHoleObstacle blackHole)
+    {
+        if (capturedTrash.Count == 0) return;
+
+        foreach (var trash in capturedTrash)
+        {
+            if (trash != null && trash.gameObject.activeInHierarchy)
+            {
+                trash.ReleaseMagnetHold();
+                blackHole.RegisterTrash(trash);
+            }
+        }
+
+        capturedTrash.Clear();
+        player.SetStickyLoad(0f);
+    }
+
     private void HandleSweepMove(Vector2 center, float radius, Vector2 moveDir, float power01)
     {
         if (moveDir.sqrMagnitude < 0.0001f || player.currentMode == BroomMode.Sticky) return;
@@ -88,6 +107,7 @@ public class SkillManager : MonoBehaviour
         float curve = power01 * power01;
         float power = Mathf.Lerp(minSweepForce, maxSweepForce, curve);
         sweepHitTrash.Clear();
+
         float totalWeight = 0f;
         int count = Physics2D.OverlapCircle(center, radius, trashFilter, smallSweepResults);
 
@@ -100,6 +120,7 @@ public class SkillManager : MonoBehaviour
                 if (sweepHitTrash.Add(trash))
                 {
                     trash.ApplyBroomHit(moveDir, power);
+                    totalWeight += trash.Weight;
                 }
             }
         }
@@ -128,12 +149,11 @@ public class SkillManager : MonoBehaviour
 
     private void UpdateCapturedTrashPosition(Vector2 center, Vector2 velocity)
     {
-        // [Modified] 增加總重量計算
         float currentTotalWeight = 0f;
 
         if (capturedTrash.Count == 0)
         {
-            player.SetStickyLoad(0f); // 沒有垃圾就歸零
+            player.SetStickyLoad(0f);
             return;
         }
 
@@ -146,8 +166,6 @@ public class SkillManager : MonoBehaviour
                 continue;
             }
             trash.ApplyMagnetHold(center, velocity);
-
-            // 累加重量
             currentTotalWeight += trash.Weight;
         }
 
@@ -156,7 +174,6 @@ public class SkillManager : MonoBehaviour
             foreach (var t in trashToRemove) capturedTrash.Remove(t);
         }
 
-        // [Modified] 更新玩家的負重
         player.SetStickyLoad(currentTotalWeight);
     }
 
@@ -167,7 +184,6 @@ public class SkillManager : MonoBehaviour
             if (trash != null) trash.ReleaseMagnetHold();
         }
         capturedTrash.Clear();
-        // 釋放時清空玩家負重
         if (player != null) player.SetStickyLoad(0f);
     }
 
@@ -196,23 +212,51 @@ public class SkillManager : MonoBehaviour
 
     private void HandleChargedSweepReleased(float holdTime, float t, Vector2 origin, Vector2 dir)
     {
-        if (chargedSweepRoot != null) chargedSweepRoot.gameObject.SetActive(false);
         if (sweepCollider == null) return;
 
-        Debug.Log($"[Skill] Charged Released. Power T: {t}");
-
-        float curve = Mathf.Pow(t, chargedPowerExponent);
-        float forceMul = Mathf.Lerp(minForceMultiplier, maxForceMultiplier, curve);
         int count = sweepCollider.Overlap(trashFilter, chargedSweepResults);
-        for (int i = 0; i < count; i++)
+        if (chargedSweepRoot != null) chargedSweepRoot.gameObject.SetActive(false);
+
+        // [重點註釋] 根據當前模式切分邏輯，確保右鍵蓄力在不同技能下有對應的效果
+        if (player.currentMode == BroomMode.Impact)
         {
-            if (!chargedSweepResults[i]) continue;
-            if (chargedSweepResults[i].TryGetComponent(out BaseTrash trash))
+            // 原有邏輯：打飛敵人
+            float curve = Mathf.Pow(t, chargedPowerExponent);
+            float forceMul = Mathf.Lerp(minForceMultiplier, maxForceMultiplier, curve);
+
+            for (int i = 0; i < count; i++)
             {
-                Vector2 radialDir = ((Vector2)trash.transform.position - origin);
-                if (radialDir.sqrMagnitude < 0.0001f) radialDir = dir;
-                else radialDir.Normalize();
-                trash.ApplyBroomHit(radialDir, forceMul);
+                var col = chargedSweepResults[i];
+                if (!col) continue;
+
+                if (col.TryGetComponent(out BaseTrash trash))
+                {
+                    Vector2 radialDir = ((Vector2)trash.transform.position - origin);
+                    if (radialDir.sqrMagnitude < 0.0001f) radialDir = dir;
+                    else radialDir.Normalize();
+
+                    trash.ApplyBroomHit(radialDir, forceMul);
+                }
+            }
+        }
+        else if (player.currentMode == BroomMode.Sticky)
+        {
+            // [重點註釋] 磁鐵模式邏輯：強制將蓄力範圍內的垃圾納入吸附列隊，實現大範圍吸取
+            Vector2 sweepCenter = player.GetSweepCenter();
+
+            for (int i = 0; i < count; i++)
+            {
+                var col = chargedSweepResults[i];
+                if (!col) continue;
+
+                if (col.TryGetComponent(out BaseTrash trash))
+                {
+                    // 排除無效、正在被黑洞吸、或已經在吸附名單中的垃圾
+                    if (trash == null || trash.IsAbsorbing || capturedTrash.Contains(trash)) continue;
+
+                    capturedTrash.Add(trash);
+                    trash.ApplyMagnetHold(sweepCenter, Vector2.zero);
+                }
             }
         }
     }

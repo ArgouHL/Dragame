@@ -27,6 +27,8 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     public event Action<float, float, Vector2, Vector2> OnChargedSweepUpdate;
     public event Action<float, float, Vector2, Vector2> OnChargedSweepReleased;
     public event Action<BroomMode> OnModeChanged;
+    // [優化] 新增玩家被黑洞吸入的專用事件，用於解耦通知其他系統（如 SkillManager 交出垃圾）
+    public event Action<BlackHoleObstacle> OnAbsorbedByBlackHole;
 
     // Input Actions
     private InputAction pointerPress;
@@ -104,13 +106,12 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         if (incomingCollider == _currentBlackHoleCollider) return;
 
         _currentBlackHoleCollider = incomingCollider;
-
         isBeingAbsorbed = true;
 
         // 重置狀態
         isLeftDown = false;
         isRightDown = false;
-        _currentStickyLoad = 0f; // 被吸入時暫時忽略重量(或者視需求保留)
+        _currentStickyLoad = 0f;
 
         effectManager.HideDragLine();
         effectManager.HideChargeSweep();
@@ -124,6 +125,9 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         SetCollidersEnabled(false);
 
         blackHole.RegisterPlayer(this);
+
+        // [核心邏輯] 觸發黑洞吸入事件，通知 SkillManager 轉移身上的垃圾
+        OnAbsorbedByBlackHole?.Invoke(blackHole);
     }
     // --- 介面實作結束 ---
 
@@ -139,8 +143,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         if (currentMode != BroomMode.Sticky || _currentStickyLoad <= 0.001f)
             return maxSpeed;
 
-        // 公式： 速度 = 基礎速度 / (1 + 重量 * 係數)
-        // 這樣可以保證速度隨著重量平滑下降，且不會變成負數
         float penaltyDivisor = 1f + (_currentStickyLoad * weightPenaltyFactor);
         float penalizedSpeed = maxSpeed / penaltyDivisor;
 
@@ -208,7 +210,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
             Vector2 drag = pointerWorld - dragStart;
             float len = drag.magnitude;
 
-            // [Modified] 視覺上也反應變慢後的極限
             float effectiveMax = GetEffectiveMaxSpeed();
             float maxVisualLen = effectiveMax / 3f;
 
@@ -273,7 +274,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
             currentSpeed *= Mathf.Clamp01(damping);
             if (currentSpeed < 0.05f) currentSpeed = 0f;
 
-            // [Modified] Sweep Power 也基於實際的最大速度計算
             float effectiveMax = GetEffectiveMaxSpeed();
             sweepPower = Mathf.Clamp01(currentSpeed / effectiveMax);
             effectManager.UpdateTrail(center, moveDir, sweepPower, true);
@@ -292,7 +292,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     private void OnSwitchModeInput(InputAction.CallbackContext ctx)
     {
         currentMode = (currentMode == BroomMode.Impact) ? BroomMode.Sticky : BroomMode.Impact;
-        // 切換模式時重置重量
         _currentStickyLoad = 0f;
         OnModeChanged?.Invoke(currentMode);
     }
@@ -339,13 +338,8 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         if (len >= 0.05f)
         {
             moveDir = drag / len;
-
-            // [Modified] 這裡使用計算後的 effectiveMaxSpeed
             float effectiveMax = GetEffectiveMaxSpeed();
-
-            // 彈射速度原本邏輯是 len * 3f，這裡加上限制
             currentSpeed = Mathf.Min(len * 3f, effectiveMax);
-
             effectManager.StartFollowParticle(transform);
         }
     }
@@ -415,7 +409,7 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         isBlocking = false;
         isLeftDown = false;
         isRightDown = false;
-        _currentStickyLoad = 0f; // 噴出後重置重量，或者保留看你設計
+        _currentStickyLoad = 0f;
 
         moveDir = ejectDir;
         currentSpeed = ejectSpeed;
