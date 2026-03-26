@@ -66,12 +66,8 @@ public class BlackHoleObstacle : BaseObstacle
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        // [DEBUG] 1. 物理碰撞發生
-        Debug.Log($"<color=orange>[BlackHole] Trigger Enter: {other.name}</color>");
-
         if (other.TryGetComponent<IAbsorbable>(out var target))
         {
-            Debug.Log($"<color=orange>[BlackHole] Target is IAbsorbable. CanAbsorb? {target.CanBeAbsorbed}</color>");
             if (target.CanBeAbsorbed)
             {
                 target.OnAbsorbStart(this);
@@ -92,12 +88,23 @@ public class BlackHoleObstacle : BaseObstacle
 
     public void RegisterPlayer(PlayerController player)
     {
-        // [DEBUG] 3. 玩家註冊成功
-        Debug.Log($"<color=orange>[BlackHole] RegisterPlayer called. Already has player? {_hasPlayerAbsorb}</color>");
-
         if (_hasPlayerAbsorb) return;
 
-        Vector2 dir = Random.insideUnitCircle.normalized;
+        // [重點註釋] 智能噴出方向：計算朝向世界中心的向量，並加上隨機偏移。
+        // 這樣可以避免黑洞在牆邊時，無腦將玩家向外發射導致穿模卡死。
+        Vector2 dir;
+        if (WorldBounds2D.Instance != null)
+        {
+            Vector2 worldCenter = WorldBounds2D.Instance.GetWorldRect().center;
+            Vector2 dirToCenter = (worldCenter - (Vector2)CenterPos).normalized;
+            Vector2 randomOffset = Random.insideUnitCircle * 0.4f; // 加上 40% 的隨機干擾
+            dir = (dirToCenter + randomOffset).normalized;
+        }
+        else
+        {
+            dir = Random.insideUnitCircle.normalized;
+        }
+
         if (dir == Vector2.zero) dir = Vector2.right;
 
         _playerAbsorb = new PlayerAbsorbData
@@ -191,7 +198,6 @@ public class BlackHoleObstacle : BaseObstacle
 
             if (data.timer >= playerAbsorbTime)
             {
-                Debug.Log("<color=orange>[BlackHole] Player State: Absorbing -> Waiting</color>");
                 data.timer = 0f;
                 data.state = PlayerState.Waiting;
             }
@@ -201,10 +207,8 @@ public class BlackHoleObstacle : BaseObstacle
             data.timer += Time.deltaTime;
             if (data.timer >= playerVanishTime)
             {
-                Debug.Log("<color=orange>[BlackHole] Player State: Waiting -> Ejecting. Calling ExitBlackHole.</color>");
                 data.timer = 0f;
                 data.state = PlayerState.Ejecting;
-                // [DEBUG] 4. 呼叫玩家退出
                 data.player.ExitBlackHole(data.ejectDir, playerEjectSpeed);
             }
         }
@@ -216,7 +220,6 @@ public class BlackHoleObstacle : BaseObstacle
 
             if (data.timer >= playerEjectDuration)
             {
-                Debug.Log("<color=orange>[BlackHole] Player Eject Complete.</color>");
                 _hasPlayerAbsorb = false;
                 return;
             }

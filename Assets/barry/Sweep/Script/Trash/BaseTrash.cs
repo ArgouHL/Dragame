@@ -69,7 +69,6 @@ public class BaseTrash : BasePoolItem, IAbsorbable
         SetCollidersEnabled(false);
         TrashCounter.MarkCollected(this);
 
-        // 將自己註冊給黑洞進行動畫處理
         blackHole.RegisterTrash(this);
     }
     // --- 介面實作結束 ---
@@ -119,7 +118,8 @@ public class BaseTrash : BasePoolItem, IAbsorbable
         if (_colliders != null && _colliders.Length > 0 && _colliders[0].enabled) SetCollidersEnabled(false);
 
         Vector2 currentPos = transform.position;
-        float actualSmoothTime = Vector2.Distance(currentPos, targetPosition) > 1f ? stickSmoothTime * 0.5f : stickSmoothTime;
+        // [重點註釋] 效能優化：使用 sqrMagnitude 取代 Distance，省去底層高耗能的 Sqrt 運算
+        float actualSmoothTime = (currentPos - targetPosition).sqrMagnitude > 1f ? stickSmoothTime * 0.5f : stickSmoothTime;
         Vector2 newPos = Vector2.SmoothDamp(currentPos, targetPosition, ref _stickVelocitySmooth, actualSmoothTime, Mathf.Infinity, Time.fixedDeltaTime);
 
         HandleBoundaryCheck(ref newPos);
@@ -140,6 +140,8 @@ public class BaseTrash : BasePoolItem, IAbsorbable
         {
             currentVelocity = Vector2.zero;
             ResolveOverlap(ref currentPos);
+            // [重點註釋] 邊界防護：靜止狀態下的重疊推擠也可能把垃圾擠出牆外，必須強制拉回
+            HandleBoundaryCheck(ref currentPos);
             return;
         }
 
@@ -204,7 +206,11 @@ public class BaseTrash : BasePoolItem, IAbsorbable
         }
 
         if (safetyLoopCount >= MAX_SUB_STEPS) remainingTime = 0f;
+
         ResolveOverlap(ref currentPos);
+
+        // [重點註釋] 邊界防護：動態推擠結束後，進行最終邊界確認，徹底防止垃圾被擠穿牆而卡死
+        HandleBoundaryCheck(ref currentPos);
     }
 
     private bool CheckPathCollision(Vector2 start, Vector2 end, ref float moveDist, out BaseTrash hitTrash)
@@ -295,7 +301,14 @@ public class BaseTrash : BasePoolItem, IAbsorbable
             Vector2 delta = pos - (Vector2)trash.transform.position;
             float sqr = delta.sqrMagnitude;
 
-            if (sqr <= 0.000001f || sqr >= minDist * minDist) continue;
+            // [重點註釋] 邏輯防呆：若兩垃圾座標完全重疊，給予微小隨機偏移，避免無法排斥
+            if (sqr <= 0.000001f)
+            {
+                delta = Random.insideUnitCircle.normalized * 0.01f;
+                sqr = delta.sqrMagnitude;
+            }
+
+            if (sqr >= minDist * minDist) continue;
 
             float dist = Mathf.Sqrt(sqr);
             float penetration = minDist - dist;
@@ -367,7 +380,6 @@ public class BaseTrash : BasePoolItem, IAbsorbable
         _hitCooldownTimer = hitCooldown;
     }
 
-    // 保留舊方法但標記為過時，或直接導向新邏輯
     public void OnEnterBlackHole()
     {
         if (IsAbsorbing) return;

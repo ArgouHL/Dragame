@@ -6,7 +6,11 @@ public class WitchController : MonoBehaviour
 {
     [Header("移動參數")]
     [SerializeField] private float moveSpeed = 5f;
-    [SerializeField] private float wallPadding = 0.5f; // 魔女身體半徑，避免穿幫
+    [SerializeField] private float wallPadding = 0.5f;
+
+    [Header("碰撞偏移")]
+    [Tooltip("用於修正圖片中心與實際碰撞邊界的偏移量")]
+    public Vector2 fixForWall;
 
     private Rigidbody2D _rb;
     private Vector2 _moveInput;
@@ -25,33 +29,36 @@ public class WitchController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        // 1. 計算目標速度
         Vector2 targetVelocity = _moveInput * moveSpeed;
-        _rb.linearVelocity = targetVelocity;
 
-        // 2. 邊界檢查 (手動干涉物理)
         if (WorldBounds2D.Instance != null)
         {
-            // 預測下一幀的位置
-            Vector2 nextPos = _rb.position + _rb.linearVelocity * Time.fixedDeltaTime;
+            Vector2 currentPos = _rb.position + fixForWall;
 
-            // 檢查是否出界
-            if (WorldBounds2D.Instance.IsOutside(nextPos))
+            if (targetVelocity.sqrMagnitude > 0f)
             {
-                // 使用 Bounce 修正位置與速度 (雖然魔女通常不需要反彈，但這能確保她在界內)
-                // 這裡傳入 wallPadding 讓魔女在碰到邊界前就停下，保留身體空間
-                Vector2 correctedPos = nextPos;
-                Vector2 correctedVel = _rb.linearVelocity;
+                Vector2 nextPos = currentPos + targetVelocity * Time.fixedDeltaTime;
 
-                WorldBounds2D.Instance.Bounce(ref correctedPos, ref correctedVel, wallPadding);
+                // WHY: 提早計算下一幀的法線，將速度沿牆面投影（滑牆），取代事後強制覆寫座標造成的物理拉扯與抖動。
+                if (WorldBounds2D.Instance.TryGetHitPointAndNormalWorld(nextPos, out _, out Vector2 normal, wallPadding))
+                {
+                    float velocityIntoWall = Vector2.Dot(targetVelocity, normal);
 
-                // 強制修正位置，並歸零撞牆方向的速度 (避免黏牆抖動)
-                _rb.position = correctedPos;
+                    // WHY: 只剔除「朝向牆壁」的速度分量，保留切線速度，讓魔女順滑貼牆移動。
+                    if (velocityIntoWall < 0f)
+                    {
+                        targetVelocity -= normal * velocityIntoWall;
+                    }
+                }
+            }
 
-                // 如果是簡單的阻擋，可以直接把速度歸零，或者保留切線速度
-                // 這裡簡單處理：如果修正後的反彈速度很大，代表撞牆了，我們把那分量殺掉
-                _rb.linearVelocity = Vector2.zero; // 最簡單：撞牆就停
+            // WHY: 獨立的保底機制。若因浮點數誤差或外部碰撞導致微小穿模，才進行位置微調，確保不陷入死角。
+            if (WorldBounds2D.Instance.TryGetHitPointAndNormalWorld(currentPos, out Vector2 safePos, out _, wallPadding))
+            {
+                _rb.position = safePos - fixForWall;
             }
         }
+
+        _rb.linearVelocity = targetVelocity;
     }
 }

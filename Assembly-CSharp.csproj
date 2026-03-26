@@ -62,24 +62,25 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\barry\Sweep\Script\SpatialGridManager.cs" />
+    <Compile Include="Assets\barry\Sweep\Script\UI\TrashCounter.cs" />
     <Compile Include="Assets\barry\Sweep\Script\PreloadConfigSO.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Anim\PlayerIdleState.cs" />
     <Compile Include="Assets\barry\Sweep\Script\DynamicSpawnManager.cs" />
     <Compile Include="Assets\barry\Sweep\Script\DragLine.cs" />
     <Compile Include="Assets\barry\Sweep\Script\BasePoolItem.cs" />
+    <Compile Include="Assets\barry\Sweep\Script\UI\UIManager.cs" />
     <Compile Include="Assets\barry\Sweep\Script\BasePool.cs" />
     <Compile Include="Assets\barry\Sweep\Script\TrashPool.cs" />
-    <Compile Include="Assets\barry\Sweep\Script\TrashCounter.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Anim\ReleaseState.cs" />
     <Compile Include="Assets\barry\Sweep\Script\LevelSpawner.cs" />
     <Compile Include="Assets\barry\Sweep\Script\IAbsorbable.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Anim\PlayerStateMachine.cs" />
     <Compile Include="Assets\barry\Sweep\Script\itemData.cs" />
-    <Compile Include="Assets\barry\Sweep\Script\WorldBounds2D.cs" />
-    <Compile Include="Assets\barry\Sweep\Script\TrashCounterPresenter.cs" />
+    <Compile Include="Assets\barry\Sweep\Script\UI\TrashCounterPresenter.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Anim\PlayerState.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Trash\CanTrash.cs" />
     <Compile Include="Assets\barry\Sweep\Script\SkillManager.cs" />
+    <Compile Include="Assets\barry\Sweep\Script\UI\StartUIManager.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Anim\PlayerAnimatorController.cs" />
     <Compile Include="Assets\InputSystem_Actions.cs" />
     <Compile Include="Assets\TutorialInfo\Scripts\Readme.cs" />
@@ -90,13 +91,13 @@
     <Compile Include="Assets\barry\Sweep\Script\SceneTrashGridUpdater.cs" />
     <Compile Include="Assets\barry\Sweep\Script\PlayerEffectManager.cs" />
     <Compile Include="Assets\barry\Sweep\Script\WitchController.cs" />
+    <Compile Include="Assets\barry\Sweep\Script\UI\WorldBounds2D.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Trash\PaperTrash.cs" />
     <Compile Include="Assets\barry\Sweep\Script\BaseObstacle.cs" />
     <Compile Include="Assets\barry\Sweep\Script\BlackHoleObstacle.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Anim\PlayerMoveState.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Anim\PowerState.cs" />
     <Compile Include="Assets\barry\Sweep\Script\ObstaclePool.cs" />
-    <Compile Include="Assets\barry\Sweep\Script\UIManager.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Trash\BaseTrash.cs" />
   </ItemGroup>
   <ItemGroup>

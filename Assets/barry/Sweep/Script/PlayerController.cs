@@ -27,7 +27,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     public event Action<float, float, Vector2, Vector2> OnChargedSweepUpdate;
     public event Action<float, float, Vector2, Vector2> OnChargedSweepReleased;
     public event Action<BroomMode> OnModeChanged;
-    // [優化] 新增玩家被黑洞吸入的專用事件，用於解耦通知其他系統（如 SkillManager 交出垃圾）
     public event Action<BlackHoleObstacle> OnAbsorbedByBlackHole;
 
     // Input Actions
@@ -49,10 +48,7 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     public bool isBeingAbsorbed;
     public bool isBlocking = false;
 
-    // [Fix] 防止噴出瞬間再次被吸入的冷卻時間
     private float _absorbCooldown = 0f;
-
-    // [New] 記錄當前所在的黑洞 Collider
     private Collider2D _currentBlackHoleCollider;
 
     [Header("=== 魔女連結設定 ===")]
@@ -71,7 +67,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     [SerializeField, Tooltip("就算再重，速度也不會低於此值")]
     private float minStickySpeed = 2f;
 
-    // 當前黏在掃把上的總重量
     private float _currentStickyLoad = 0f;
 
     [Header("=== 基礎參數 ===")]
@@ -95,7 +90,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
 
     public Vector2 GetSweepCenter() => (Vector2)transform.position + sweepOffset;
 
-    // --- 介面實作開始 ---
     public bool CanBeAbsorbed => !isBeingAbsorbed && _absorbCooldown <= 0f;
 
     public void OnAbsorbStart(BlackHoleObstacle blackHole)
@@ -108,7 +102,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         _currentBlackHoleCollider = incomingCollider;
         isBeingAbsorbed = true;
 
-        // 重置狀態
         isLeftDown = false;
         isRightDown = false;
         _currentStickyLoad = 0f;
@@ -125,19 +118,14 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         SetCollidersEnabled(false);
 
         blackHole.RegisterPlayer(this);
-
-        // [核心邏輯] 觸發黑洞吸入事件，通知 SkillManager 轉移身上的垃圾
         OnAbsorbedByBlackHole?.Invoke(blackHole);
     }
-    // --- 介面實作結束 ---
 
-    // [New] 由 SkillManager 呼叫，更新當前負重
     public void SetStickyLoad(float totalWeight)
     {
         _currentStickyLoad = totalWeight;
     }
 
-    // [New] 計算負重後的實際最高速度
     private float GetEffectiveMaxSpeed()
     {
         if (currentMode != BroomMode.Sticky || _currentStickyLoad <= 0.001f)
@@ -256,6 +244,13 @@ public class PlayerController : MonoBehaviour, IAbsorbable
 
             if (WorldBounds2D.Instance != null && WorldBounds2D.Instance.IsOutside(nextPos))
             {
+                // [重點註釋] 強制把位置修正回邊界內。
+                // 否則若因物理誤差或黑洞吐出導致玩家處於牆外，IsOutside 會永遠為 true，造成速度歸 0 永遠卡死。
+                Vector2 safePos = nextPos;
+                Vector2 tempVel = velocityVector;
+                WorldBounds2D.Instance.Bounce(ref safePos, ref tempVel);
+                rb.position = safePos;
+
                 if (TryGetWallHitFromWorldBounds(nextPos, moveDir, out var hitPoint, out var hitNormal))
                     effectManager.PlayWallHit(hitPoint, hitNormal);
                 else
