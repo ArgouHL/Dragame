@@ -58,7 +58,6 @@ public class LevelSpawner : MonoBehaviour
     [SerializeField]
     private int maxSpawnAttempts = 20;
 
-    // 記錄所有被佔用的位置 (包含障礙物與已生成的垃圾)
     private List<Vector3> allOccupiedPositions = new List<Vector3>();
 
     public enum SpawnQuadrant
@@ -71,7 +70,6 @@ public class LevelSpawner : MonoBehaviour
 
     private void Start()
     {
-        // ===== NEW: 開場重置計數（避免殘留）=====
         TrashCounter.Reset();
 
         if (TrashPool.Instance == null || ObstaclePool.Instance == null)
@@ -95,16 +93,9 @@ public class LevelSpawner : MonoBehaviour
         PreloadTrashPool();
         PreloadObstaclePool();
 
-        // 初始關卡生成（SpawnLevel 內部會在最後設定 y）
         SpawnLevel(obstacleLayout, trashSpawnList);
     }
 
-    // ===== 對外公開的 API（給管理器用）=====
-
-    /// <summary>
-    /// 嘗試在指定象限隨機生成一個垃圾。
-    /// 注意：你說「場上不會新增」，所以這些 API 若之後真的被呼叫，y 不會自動增加。
-    /// </summary>
     public bool TrySpawnRandomTrash(TrashType type, SpawnQuadrant quadrant)
     {
         for (int i = 0; i < maxSpawnAttempts; i++)
@@ -132,13 +123,10 @@ public class LevelSpawner : MonoBehaviour
         return true;
     }
 
-    // ===== 初始關卡生成 =====
-
     public void SpawnLevel(List<ObstacleSpawnData> obstaclesToSpawn, List<TrashSpawnData> trashToSpawn)
     {
         allOccupiedPositions.Clear();
 
-        // 1. 生成障礙物並記錄位置
         if (obstaclesToSpawn != null)
         {
             foreach (ObstacleSpawnData data in obstaclesToSpawn)
@@ -156,12 +144,9 @@ public class LevelSpawner : MonoBehaviour
         }
         Debug.Log($"已生成 {obstaclesToSpawn?.Count ?? 0} 個障礙物。");
 
-        // 2. 準備垃圾資料
         if (trashToSpawn == null || trashToSpawn.Count == 0)
         {
             Debug.LogWarning("無法生成隨機垃圾：'trashSpawnList' 未設定或為空。");
-
-            // ===== NEW: 即使沒生成垃圾，也要把 y 設定正確（可能場景手動擺）=====
             TrashCounter.SetTotal(CountActiveTrashOnField());
             return;
         }
@@ -178,7 +163,6 @@ public class LevelSpawner : MonoBehaviour
         int totalRandomTrash = allTrashToSpawn.Count;
         int trashSpawnedCount = 0;
 
-        // 3. 平均分配象限生成
         for (int i = 0; i < totalRandomTrash; i++)
         {
             SpawnQuadrant quadrant = (SpawnQuadrant)(i % 4);
@@ -190,12 +174,8 @@ public class LevelSpawner : MonoBehaviour
 
         Debug.Log($"關卡生成完畢：總共 {totalRandomTrash} 個垃圾需求，成功生成 {trashSpawnedCount} 個。");
 
-        // ===== NEW: 在「真正關卡生成完成」後，掃描場上啟用垃圾數量設定 y =====
-        // 這裡不會算到 Preload（因為 Preload 已 Return 回池 inactive）
         TrashCounter.SetTotal(CountActiveTrashOnField());
     }
-
-    // ===== 工具函式 (內部用) =====
 
     private void Shuffle<T>(List<T> list)
     {
@@ -212,14 +192,16 @@ public class LevelSpawner : MonoBehaviour
 
     public bool IsValidSpawnPosition(Vector3 targetPos)
     {
+        // [Why] 改用平方距離 (sqrMagnitude) 取代 Vector2.Distance，避免迴圈內頻繁執行昂貴的開根號運算及 new Vector2 分配
+        float minSafeDistSqr = minSafeDistance * minSafeDistance;
+
         foreach (Vector3 occupiedPos in allOccupiedPositions)
         {
-            float distance = Vector2.Distance(
-                new Vector2(targetPos.x, targetPos.y),
-                new Vector2(occupiedPos.x, occupiedPos.y)
-            );
+            float dx = targetPos.x - occupiedPos.x;
+            float dy = targetPos.y - occupiedPos.y;
+            float distSqr = dx * dx + dy * dy;
 
-            if (distance < minSafeDistance)
+            if (distSqr < minSafeDistSqr)
                 return false;
         }
         return true;
@@ -335,18 +317,13 @@ public class LevelSpawner : MonoBehaviour
         return new Vector3(x, y, 0f);
     }
 
-    // ===== NEW: 掃描場上「啟用中的 BaseTrash」作為 y =====
-    // - 不會算到 Preload（因為 Preload Return 後是 inactive）
-    // - 會算到場景手動擺（只要它是 active）
     private int CountActiveTrashOnField()
     {
+        // [Why] 移除棄用的排序參數，並刪除冗餘的 activeInHierarchy 檢查，因為 FindObjectsInactive.Exclude 已自動過濾隱藏物件
 #if UNITY_2023_1_OR_NEWER
-        BaseTrash[] trashes = Object.FindObjectsByType<BaseTrash>(
-            FindObjectsInactive.Exclude,
-            FindObjectsSortMode.None
-        );
+        BaseTrash[] trashes = Object.FindObjectsByType<BaseTrash>(FindObjectsInactive.Exclude);
 #else
-        BaseTrash[] trashes = FindObjectsOfType<BaseTrash>(false); // false = 不含 inactive
+        BaseTrash[] trashes = Object.FindObjectsOfType<BaseTrash>(false);
 #endif
 
         int count = 0;
@@ -354,8 +331,7 @@ public class LevelSpawner : MonoBehaviour
         {
             BaseTrash t = trashes[i];
             if (t == null) continue;
-            if (!t.gameObject.activeInHierarchy) continue;
-            if (t.IsAbsorbing) continue; // 保險：吸入中的不算場上
+            if (t.IsAbsorbing) continue;
             count++;
         }
         return count;

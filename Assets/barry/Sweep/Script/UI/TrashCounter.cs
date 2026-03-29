@@ -4,20 +4,19 @@ using UnityEngine;
 
 public static class TrashCounter
 {
-    public static int Total { get; private set; }      // y
-    public static int Collected { get; private set; }  // x
+    public static int Total { get; private set; }
+    public static int Collected { get; private set; }
 
-    // 防止同一顆垃圾重複計數（同一關卡）
-    private static readonly HashSet<int> _collectedIds = new HashSet<int>();
+    // [Why] 改用 HashSet<BaseTrash> 直接記錄物件參考，徹底避開 EntityId 轉型的過時警告，且物件參考比對效能最佳
+    private static readonly HashSet<BaseTrash> _collectedTrashes = new HashSet<BaseTrash>();
 
-    // (x, y)
     public static event Action<int, int> Changed;
 
     public static void Reset()
     {
         Total = 0;
         Collected = 0;
-        _collectedIds.Clear();
+        _collectedTrashes.Clear();
         Changed?.Invoke(Collected, Total);
     }
 
@@ -32,10 +31,9 @@ public static class TrashCounter
     {
         if (trash == null) return;
 
-        int id = trash.GetInstanceID();
-        if (_collectedIds.Contains(id)) return;
+        if (_collectedTrashes.Contains(trash)) return;
 
-        _collectedIds.Add(id);
+        _collectedTrashes.Add(trash);
         Collected = Mathf.Min(Collected + 1, Total);
         Changed?.Invoke(Collected, Total);
     }

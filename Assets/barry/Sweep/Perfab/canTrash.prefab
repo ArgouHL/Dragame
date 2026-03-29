@@ -96,6 +96,7 @@ MonoBehaviour:
   initialScale: {x: 1, y: 1, z: 1}
   absorbEffectDuration: 3
   rotationSpeed: 360
+  trashType: 1
   scaleCurve:
     serializedVersion: 2
     m_Curve:
@@ -144,26 +145,20 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  trashType: 1
   currentVelocity: {x: 0, y: 0}
   deceleration: 5
   viewportPadding: 0.1
   broomForce: 7
   trashForce: 5
-  wieght: 3
+  weight: 1
   collisionCheckRadius: 0.5
   hitCooldown: 0.2
   collisionDamping: 0.8
   minCollisionSpeed: 0.4
   sleepSpeedThreshold: 0.1
   sleepTime: 1
-  collisionPolygon:
-  - {x: -0.2, y: 1.35}
-  - {x: -0.2, y: -1}
-  - {x: 0.4, y: -1}
-  - {x: 0.4, y: 1.35}
-  debugCollision: 0
-  debugVelocity: 0
+  stickSmoothTime: 0.05
+  _isStuck: 0
 --- !u!50 &-5732845194686006482
 Rigidbody2D:
   serializedVersion: 5

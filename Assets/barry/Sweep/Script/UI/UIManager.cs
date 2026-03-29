@@ -6,6 +6,10 @@ using UnityEngine.SceneManagement;
 
 public class UIManager : MonoBehaviour
 {
+    [Header("=== 調試設置 (Debug) ===")]
+    [SerializeField, Tooltip("開啟以在 Console 追蹤 UI 與遊戲狀態切換")]
+    private bool showDebugLogs = true;
+
     [Header("=== 垃圾計數 UI ===")]
     [SerializeField] private TMP_Text trashCounterText;
 
@@ -24,11 +28,11 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Button teachButton;
     [SerializeField] private GameObject teachPanel;
     [SerializeField] private Button pauseRestartButton;
-    [SerializeField] private Button pauseToStartButton; // ✅ 新增：暫停選單回主畫面按鈕
+    [SerializeField] private Button pauseToStartButton;
 
     [Header("=== 結束 UI ===")]
     [SerializeField] private GameObject endPanel;
-    [SerializeField] private Button endToStartButton; // ✅ 統一命名：結束畫面回主畫面按鈕
+    [SerializeField] private Button endToStartButton;
 
     [Header("=== 輸入綁定 ===")]
     [SerializeField] private InputAction pauseAction = new InputAction("Pause", binding: "<Keyboard>/escape");
@@ -51,12 +55,10 @@ public class UIManager : MonoBehaviour
     {
         TrashCounter.Changed += OnTrashCounterChanged;
 
-        // 按鈕事件綁定
         if (continueButton != null) continueButton.onClick.AddListener(ResumeGame);
         if (teachButton != null) teachButton.onClick.AddListener(OnTeachClicked);
         if (pauseRestartButton != null) pauseRestartButton.onClick.AddListener(OnRestartGame);
 
-        // ✅ 兩個面板的「回到主畫面」按鈕指向同一邏輯
         if (pauseToStartButton != null) pauseToStartButton.onClick.AddListener(OnReturnToStartMenu);
         if (endToStartButton != null) endToStartButton.onClick.AddListener(OnReturnToStartMenu);
 
@@ -85,6 +87,7 @@ public class UIManager : MonoBehaviour
 
     private void Start()
     {
+        Log("初始化 UI 系統，遊戲開始。");
         isPaused = isTeaching = isGameOver = false;
         remainingTime = gameDuration;
 
@@ -111,7 +114,7 @@ public class UIManager : MonoBehaviour
         {
             remainingTime = 0f;
             UpdateTimerText();
-            GameOver();
+            GameOver("時間耗盡");
             return;
         }
         UpdateTimerText();
@@ -122,7 +125,10 @@ public class UIManager : MonoBehaviour
     private void RefreshTrash(int collected, int total)
     {
         if (trashCounterText != null) trashCounterText.text = $"{collected}/{total}";
-        if (!isGameOver && total > 0 && collected >= total) GameOver();
+        if (!isGameOver && total > 0 && collected >= total)
+        {
+            GameOver("已收集所有垃圾");
+        }
     }
 
     private void UpdateTimerText()
@@ -137,6 +143,7 @@ public class UIManager : MonoBehaviour
 
     private void OnSkillModeChanged(BroomMode mode)
     {
+        Log($"切換技能模式: {mode}");
         SetImageAlpha(skill1Icon, mode == BroomMode.Impact ? 1f : inactiveAlpha);
         SetImageAlpha(skill2Icon, mode == BroomMode.Sticky ? 1f : inactiveAlpha);
     }
@@ -157,6 +164,7 @@ public class UIManager : MonoBehaviour
     private void PauseGame()
     {
         if (isGameOver) return;
+        Log("觸發暫停 (Pause)。");
         isPaused = true;
         pausePanel?.SetActive(true);
         pausePanel?.transform.SetAsLastSibling();
@@ -166,6 +174,7 @@ public class UIManager : MonoBehaviour
     private void ResumeGame()
     {
         if (isGameOver) return;
+        Log("解除暫停，遊戲繼續 (Resume)。");
         isPaused = isTeaching = false;
         pausePanel?.SetActive(false);
         teachPanel?.SetActive(false);
@@ -175,6 +184,7 @@ public class UIManager : MonoBehaviour
     private void OnTeachClicked()
     {
         if (isGameOver) return;
+        Log("開啟教學面板。");
         isTeaching = true;
         pausePanel?.SetActive(false);
         if (teachPanel != null)
@@ -187,6 +197,7 @@ public class UIManager : MonoBehaviour
     private void CloseTeachPanel()
     {
         if (isGameOver) return;
+        Log("關閉教學面板，返回暫停選單。");
         isTeaching = false;
         teachPanel?.SetActive(false);
         if (pausePanel != null)
@@ -201,9 +212,10 @@ public class UIManager : MonoBehaviour
         if (isTeaching) CloseTeachPanel();
     }
 
-    private void GameOver()
+    private void GameOver(string reason)
     {
         if (isGameOver) return;
+        Log($"遊戲結束 (GameOver)，原因: {reason}");
         isGameOver = true;
         isPaused = isTeaching = false;
         pausePanel?.SetActive(false);
@@ -218,13 +230,15 @@ public class UIManager : MonoBehaviour
 
     private void OnRestartGame()
     {
+        Log("重新開始當前關卡。");
         Time.timeScale = 1f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
-    // Why: 統一處理跳轉場景邏輯。必須強制恢復 TimeScale，否則主選單可能會因為時停導致 UI 動畫或邏輯卡死。
+    // [重點註釋] 統一處理跳轉場景邏輯。必須強制恢復 TimeScale，否則主選單可能會因為時停導致 UI 動畫或邏輯卡死。
     private void OnReturnToStartMenu()
     {
+        Log("返回主畫面。");
         Time.timeScale = 1f;
         SceneManager.LoadScene("StartMenu");
     }
@@ -235,5 +249,16 @@ public class UIManager : MonoBehaviour
         if (PlayerController.instance != null) PlayerController.instance.enabled = isPlayingGame;
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
+    }
+
+    // [重點註釋] 封裝 Debug 邏輯，配合前置處理器指令，確保編譯成正式版時完全剔除字串配置 (String Allocation) 的效能消耗。
+    private void Log(string message)
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (showDebugLogs)
+        {
+            Debug.Log($"[UIManager] {message}");
+        }
+#endif
     }
 }

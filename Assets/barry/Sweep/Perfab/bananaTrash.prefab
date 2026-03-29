@@ -49,6 +49,7 @@ MonoBehaviour:
   initialScale: {x: 1, y: 1, z: 1}
   absorbEffectDuration: 3
   rotationSpeed: 360
+  trashType: 0
   scaleCurve:
     serializedVersion: 2
     m_Curve:
@@ -97,21 +98,20 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  trashType: 0
   currentVelocity: {x: 0, y: 0}
   deceleration: 5
   viewportPadding: 0.1
   broomForce: 10
   trashForce: 10
+  weight: 10
   collisionCheckRadius: 0.44
   hitCooldown: 0.2
   collisionDamping: 0.6
   minCollisionSpeed: 0.1
-  weight: 10
-  collisionRestitution: 0
   sleepSpeedThreshold: 0.2
   sleepTime: 0.5
-  collisionPolygon: []
+  stickSmoothTime: 0.05
+  _isStuck: 0
 --- !u!58 &7963815336549127378
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -256,12 +256,12 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: cad7e77c18ecfd740b5189eb28a76eea, type: 3}
+  m_Sprite: {fileID: 21300000, guid: e053573aa0db9364ab34160330421ceb, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 2, y: 2}
+  m_Size: {x: 35.079998, y: 24.802656}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1

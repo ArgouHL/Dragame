@@ -53,25 +53,21 @@ public class BlackHoleObstacle : BaseObstacle
 
     private void Awake()
     {
-        _triggerCollider = GetComponent<CircleCollider2D>();
-        if (_triggerCollider == null)
+        if (!TryGetComponent(out _triggerCollider))
         {
             _triggerCollider = gameObject.AddComponent<CircleCollider2D>();
-            _triggerCollider.isTrigger = true;
         }
 
+        _triggerCollider.isTrigger = true;
         _triggerCollider.offset = centerOffset;
         _triggerCollider.radius = absorbRadius;
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.TryGetComponent<IAbsorbable>(out var target))
+        if (other.TryGetComponent<IAbsorbable>(out var target) && target.CanBeAbsorbed)
         {
-            if (target.CanBeAbsorbed)
-            {
-                target.OnAbsorbStart(this);
-            }
+            target.OnAbsorbStart(this);
         }
     }
 
@@ -90,14 +86,15 @@ public class BlackHoleObstacle : BaseObstacle
     {
         if (_hasPlayerAbsorb) return;
 
-        // [重點註釋] 智能噴出方向：計算朝向世界中心的向量，並加上隨機偏移。
-        // 這樣可以避免黑洞在牆邊時，無腦將玩家向外發射導致穿模卡死。
-        Vector2 dir;
+        Vector2 dir = Vector2.right; // 預設方向
+
         if (WorldBounds2D.Instance != null)
         {
-            Vector2 worldCenter = WorldBounds2D.Instance.GetWorldRect().center;
-            Vector2 dirToCenter = (worldCenter - (Vector2)CenterPos).normalized;
-            Vector2 randomOffset = Random.insideUnitCircle * 0.4f; // 加上 40% 的隨機干擾
+            Vector2 safeCenter = WorldBounds2D.Instance.GetSafeCenter(CenterPos);
+            Vector2 dirToCenter = (safeCenter - (Vector2)CenterPos).normalized;
+            if (dirToCenter == Vector2.zero) dirToCenter = Random.insideUnitCircle.normalized;
+
+            Vector2 randomOffset = Random.insideUnitCircle * 0.15f;
             dir = (dirToCenter + randomOffset).normalized;
         }
         else
@@ -121,11 +118,11 @@ public class BlackHoleObstacle : BaseObstacle
 
     private void Update()
     {
-        UpdateAbsorbAnimation();
+        UpdateTrashAbsorbAnimation();
         UpdatePlayerAbsorbAnimation();
     }
 
-    private void UpdateAbsorbAnimation()
+    private void UpdateTrashAbsorbAnimation()
     {
         int count = _absorbing.Count;
         if (count == 0) return;
@@ -133,6 +130,7 @@ public class BlackHoleObstacle : BaseObstacle
         Vector3 targetPos = CenterPos;
         float dt = Time.deltaTime;
 
+        // 反向迴圈，方便在遍歷中安全刪除元素
         for (int i = count - 1; i >= 0; i--)
         {
             AbsorbData data = _absorbing[i];
@@ -145,7 +143,6 @@ public class BlackHoleObstacle : BaseObstacle
 
             data.elapsed += dt;
             float t = Mathf.Clamp01(data.elapsed / trashAbsorbTime);
-
             float scaleT = trashScaleCurve != null ? trashScaleCurve.Evaluate(t) : t;
             float moveT = trashMoveCurve != null ? trashMoveCurve.Evaluate(t) : t;
 
@@ -157,6 +154,7 @@ public class BlackHoleObstacle : BaseObstacle
             if (data.elapsed >= trashAbsorbTime)
             {
                 data.trash.ResetState();
+
                 if (TrashPool.Instance != null) TrashPool.Instance.ReturnTrash(data.trash);
                 else Destroy(data.trash.gameObject);
 
@@ -184,58 +182,69 @@ public class BlackHoleObstacle : BaseObstacle
         if (!_hasPlayerAbsorb) return;
 
         PlayerAbsorbData data = _playerAbsorb;
-        if (data.player == null) { _hasPlayerAbsorb = false; return; }
+        if (data.player == null)
+        {
+            _hasPlayerAbsorb = false;
+            return;
+        }
 
         Transform tr = data.player.transform;
+        float dt = Time.deltaTime;
 
-        if (data.state == PlayerState.Absorbing)
+        switch (data.state)
         {
-            data.timer += Time.deltaTime;
-            float t = Mathf.Clamp01(data.timer / playerAbsorbTime);
-            tr.position = Vector2.LerpUnclamped(data.startPos, CenterPos, t);
-            tr.localScale = Vector3.LerpUnclamped(data.startScale, Vector3.zero, t);
-            tr.Rotate(0f, 0f, playerRotateSpeed * Time.deltaTime);
+            case PlayerState.Absorbing:
+                data.timer += dt;
+                float tAbsorb = Mathf.Clamp01(data.timer / playerAbsorbTime);
+                tr.position = Vector2.LerpUnclamped(data.startPos, CenterPos, tAbsorb);
+                tr.localScale = Vector3.LerpUnclamped(data.startScale, Vector3.zero, tAbsorb);
+                tr.Rotate(0f, 0f, playerRotateSpeed * dt);
 
-            if (data.timer >= playerAbsorbTime)
-            {
-                data.timer = 0f;
-                data.state = PlayerState.Waiting;
-            }
-        }
-        else if (data.state == PlayerState.Waiting)
-        {
-            data.timer += Time.deltaTime;
-            if (data.timer >= playerVanishTime)
-            {
-                data.timer = 0f;
-                data.state = PlayerState.Ejecting;
-                data.player.ExitBlackHole(data.ejectDir, playerEjectSpeed);
-            }
-        }
-        else if (data.state == PlayerState.Ejecting)
-        {
-            data.timer += Time.deltaTime;
-            float t = Mathf.Clamp01(data.timer / playerEjectDuration);
-            tr.localScale = Vector3.LerpUnclamped(Vector3.zero, data.startScale, t);
+                if (data.timer >= playerAbsorbTime)
+                {
+                    data.timer = 0f;
+                    data.state = PlayerState.Waiting;
+                }
+                break;
 
-            if (data.timer >= playerEjectDuration)
-            {
-                _hasPlayerAbsorb = false;
-                return;
-            }
+            case PlayerState.Waiting:
+                data.timer += dt;
+                if (data.timer >= playerVanishTime)
+                {
+                    data.timer = 0f;
+                    data.state = PlayerState.Ejecting;
+                    data.player.ExitBlackHole(data.ejectDir, playerEjectSpeed);
+                }
+                break;
+
+            case PlayerState.Ejecting:
+                data.timer += dt;
+                float tEject = Mathf.Clamp01(data.timer / playerEjectDuration);
+                tr.localScale = Vector3.LerpUnclamped(Vector3.zero, data.startScale, tEject);
+
+                if (data.timer >= playerEjectDuration)
+                {
+                    _hasPlayerAbsorb = false;
+                    return;
+                }
+                break;
         }
+
         _playerAbsorb = data;
     }
 
+#if UNITY_EDITOR
     private void OnDrawGizmos()
     {
         Vector3 center = CenterPos;
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(center, absorbRadius);
+
         if (showTriggerGizmos)
         {
             Gizmos.color = triggerColor;
             Gizmos.DrawSphere(center, absorbRadius);
         }
     }
+#endif
 }

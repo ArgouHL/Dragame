@@ -86,7 +86,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   initialScale: {x: 1, y: 1, z: 1}
   obstacleType: 0
-  absorbRadius: 0.8
+  absorbRadius: 0
   centerOffset: {x: 0, y: 0}
   trashAbsorbTime: 1
   trashRotateSpeed: 360
@@ -141,10 +141,10 @@ MonoBehaviour:
   playerAbsorbTime: 0.5
   playerVanishTime: 0.5
   playerEjectDuration: 0.5
-  playerEjectSpeed: 30
+  playerEjectSpeed: 20
   playerRotateSpeed: 1
   showTriggerGizmos: 1
-  triggerColor: {r: 1, g: 0.5, b: 0, a: 0.3}
+  triggerColor: {r: 1, g: 0.58888274, b: 0.1745283, a: 0.3}
 --- !u!114 &2190927143126933320
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -157,20 +157,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58449d558ff9ea43a531cfef89f41f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  currentState: 0
+  idleDuration: 10
+  walkDistance: 2
   moveSpeed: 3
-  idleWaitTime: 2
-  hungerThreshold: 10
-  starvingWalkDistance: 2
-  suckingDuration: 2
-  suckingRadius: 3
+  suckDuration: 2
+  suckRadius: 1
   suckForce: 10
   trashLayer:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 256
   maxStomachCapacity: 5
   trashPrefab: {fileID: 0}
   vomitForce: 5
+  currentState: 0
+  currentStomach: 0
 --- !u!50 &8563358709643510129
 Rigidbody2D:
   serializedVersion: 5
