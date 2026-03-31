@@ -79,6 +79,10 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     [SerializeField, Range(0f, 1f)] private float minHitPower = 0.25f;
     [SerializeField, Min(0f)] private float hitWeightScale = 1f;
 
+    [Header("=== 簡易相機跟隨 ===")]
+    [SerializeField, Tooltip("相機鎖死在玩家身上的相對偏移量")]
+    private Vector3 cameraOffset = new Vector3(0f, 15f, -15f);
+
     public float CurrentSpeed => currentSpeed;
     public float Wieght => wieght;
 
@@ -275,6 +279,16 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         }
     }
 
+    private void LateUpdate()
+    {
+        // [重點註釋] 極簡跟隨邏輯：利用 LateUpdate 確保在物理位移結束後才改變相機座標，避免畫面微小抖動。
+        // 只拷貝相對位移，不拷貝旋轉，這樣玩家怎麼翻轉都不會影響到 2.5D 的固定視角。
+        if (cam != null)
+        {
+            cam.transform.position = transform.position + cameraOffset;
+        }
+    }
+
     private void OnSwitchModeInput(InputAction.CallbackContext ctx)
     {
         currentMode = (currentMode == BroomMode.Impact) ? BroomMode.Sticky : BroomMode.Impact;
@@ -417,7 +431,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         return wb.TryGetHitPointAndNormalWorld(worldPos, out hitPoint, out hitNormal);
     }
 
-    // [重點註釋] 唯一更動處：保留你的原始代碼，僅替換此函式以解決 2.5D 相機傾斜導致的滑鼠點擊偏移問題。
     private Vector2 ScreenToWorld(Vector2 p)
     {
         if (cam == null) return Vector2.zero;

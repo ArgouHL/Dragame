@@ -79,7 +79,6 @@
     <Compile Include="Assets\barry\Sweep\Script\UI\TrashCounterPresenter.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Anim\PlayerState.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Trash\CanTrash.cs" />
-    <Compile Include="Assets\barry\Sweep\Script\CameraFollow25D.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Player\SkillManager.cs" />
     <Compile Include="Assets\barry\Sweep\Script\UI\StartUIManager.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Anim\PlayerAnimatorController.cs" />
@@ -90,7 +89,6 @@
     <Compile Include="Assets\barry\Sweep\Script\Player\PlayerController.cs" />
     <Compile Include="Assets\barry\Sweep\Script\DynamicSweepMesh.cs" />
     <Compile Include="Assets\barry\Sweep\Script\SceneTrashGridUpdater.cs" />
-    <Compile Include="Assets\barry\Sweep\Script\FacingCamera.cs" />
     <Compile Include="Assets\barry\Sweep\Script\UI\WorldBounds2D.cs" />
     <Compile Include="Assets\barry\Sweep\Script\Trash\PaperTrash.cs" />
     <Compile Include="Assets\barry\Sweep\Script\BaseObstacle.cs" />

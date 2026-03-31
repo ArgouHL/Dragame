@@ -1,8 +1,9 @@
-﻿using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
+﻿using TMPro;
+using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
@@ -49,6 +50,8 @@ public class UIManager : MonoBehaviour
         closeTeachAction = new InputAction("CloseTeach", InputActionType.Button);
         closeTeachAction.AddBinding("<Mouse>/leftButton");
         closeTeachAction.AddBinding("<Mouse>/rightButton");
+        GraphicsSettings.transparencySortMode = TransparencySortMode.CustomAxis;
+        GraphicsSettings.transparencySortAxis = new Vector3(0, 1, 0);
     }
 
     private void OnEnable()
