@@ -16,7 +16,7 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     [SerializeField] public PlayerEffectManager effectManager;
 
     [Header("=== 基礎組件 ===")]
-    public Vector2 fixForWall;
+    public Vector2 fixForWall;           // ← 建議在 Inspector 強制設成 (0, 0) 並且之後不要再改
     public Rigidbody2D rb;
     private Camera cam;
     private PlayerInput input;
@@ -27,6 +27,11 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     public event Action<float, float, Vector2, Vector2> OnChargedSweepReleased;
     public event Action<BroomMode> OnModeChanged;
     public event Action<BlackHoleObstacle> OnAbsorbedByBlackHole;
+    public event Action OnLeftPressAction;
+    public event Action OnLeftReleaseAction;
+    public event Action OnRightPressStart;
+    public event Action OnWallHitEvent;
+    public event Action<TrashType> OnTrashHitEvent;
 
     // Input Actions
     private InputAction pointerPress;
@@ -40,13 +45,11 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     private float currentSpeed;
     private Vector2 chargedDir;
     private float rightPressStartTime;
-
     private bool isLeftDown = false;
     private bool isRightDown = false;
     private bool blockBoth = false;
     public bool isBeingAbsorbed;
     public bool isBlocking = false;
-
     private float _absorbCooldown = 0f;
     private Collider2D _currentBlackHoleCollider;
 
@@ -62,7 +65,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     private float weightPenaltyFactor = 0.5f;
     [SerializeField, Tooltip("就算再重，速度也不會低於此值")]
     private float minStickySpeed = 2f;
-
     private float _currentStickyLoad = 0f;
 
     [Header("=== 基礎參數 ===")]
@@ -89,34 +91,26 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     private Collider2D[] colliders;
 
     public Vector2 GetSweepCenter() => (Vector2)transform.position + sweepOffset;
-
     public bool CanBeAbsorbed => !isBeingAbsorbed && _absorbCooldown <= 0f;
 
     public void OnAbsorbStart(BlackHoleObstacle blackHole)
     {
         if (isBeingAbsorbed || _absorbCooldown > 0f) return;
-
         Collider2D incomingCollider = blackHole.GetComponent<Collider2D>();
         if (incomingCollider == _currentBlackHoleCollider) return;
-
         _currentBlackHoleCollider = incomingCollider;
         isBeingAbsorbed = true;
-
         isLeftDown = false;
         isRightDown = false;
         _currentStickyLoad = 0f;
-
         effectManager.HideDragLine();
         effectManager.HideChargeSweep();
-
         if (PlayerAnimatorController.instance != null)
         {
             PlayerAnimatorController.instance.stateMachine.ChangeState(PlayerAnimatorController.instance.idleState);
         }
-
         BlockBoth();
         SetCollidersEnabled(false);
-
         blackHole.RegisterPlayer(this);
         OnAbsorbedByBlackHole?.Invoke(blackHole);
     }
@@ -130,10 +124,8 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     {
         if (currentMode != BroomMode.Sticky || _currentStickyLoad <= 0.001f)
             return maxSpeed;
-
         float penaltyDivisor = 1f + (_currentStickyLoad * weightPenaltyFactor);
         float penalizedSpeed = maxSpeed / penaltyDivisor;
-
         return Mathf.Max(penalizedSpeed, minStickySpeed);
     }
 
@@ -149,19 +141,15 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     {
         if (instance != null && instance != this) { Destroy(gameObject); return; }
         instance = this;
-
         cam = Camera.main;
         rb = GetComponent<Rigidbody2D>();
         if (effectManager == null) effectManager = GetComponent<PlayerEffectManager>();
-
         input = GetComponent<PlayerInput>();
         if (input == null) { Debug.LogError("Missing PlayerInput! 請確保 Player (Broom) 身上有掛載 PlayerInput 組件。"); return; }
-
         pointerPress = input.actions["PointerPress"];
         rightPointerPress = input.actions["RightPointerPress"];
         pointerPosition = input.actions["PointerPosition"];
         switchModeAction = input.actions.FindAction("SwitchMode");
-
         colliders = GetComponentsInChildren<Collider2D>(true);
     }
 
@@ -188,7 +176,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     private void Update()
     {
         if (_absorbCooldown > 0f) _absorbCooldown -= Time.deltaTime;
-
         if (isBeingAbsorbed || pointerPosition == null) return;
 
         Vector2 pointerWorld = ScreenToWorld(pointerPosition.ReadValue<Vector2>());
@@ -198,10 +185,8 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         {
             Vector2 drag = pointerWorld - dragStart;
             float len = drag.magnitude;
-
             float effectiveMax = GetEffectiveMaxSpeed();
             float maxVisualLen = effectiveMax / 3f;
-
             Vector2 visualDrag = (len > 0.001f) ? (drag / len) * Mathf.Min(len, maxVisualLen) : Vector2.zero;
             effectManager.UpdateDragLine(center, center + visualDrag);
         }
@@ -213,7 +198,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
             Vector2 toPointer = pointerWorld - center;
             if (toPointer.sqrMagnitude > 0.0001f) chargedDir = toPointer.normalized;
             Vector2 origin = center + chargedDir * chargeCenterOffset;
-
             OnChargedSweepUpdate?.Invoke(hold, t, origin, chargedDir);
             effectManager.ShowChargeSweep(origin, chargedDir, t);
         }
@@ -223,6 +207,9 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         }
     }
 
+    // ================================================
+    // 【已修正】FixedUpdate - 現在是「碰到邊界就停住 + 空氣牆」行為
+    // ================================================
     private void FixedUpdate()
     {
         if (isBlocking || isBeingAbsorbed)
@@ -239,37 +226,44 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         if (currentSpeed > 0.01f)
         {
             velocityVector = moveDir * currentSpeed;
-            Vector2 nextPos = rb.position + velocityVector * Time.fixedDeltaTime;
-            nextPos += fixForWall;
 
+            // 【關鍵修正】直接計算真實下一幀位置，不再使用 fixForWall
+            Vector2 nextPos = rb.position + velocityVector * Time.fixedDeltaTime;
+
+            // 檢查是否會超出邊界
             if (WorldBounds2D.Instance != null && WorldBounds2D.Instance.IsOutside(nextPos))
             {
                 Vector2 safePos = nextPos;
                 Vector2 tempVel = velocityVector;
-                WorldBounds2D.Instance.Bounce(ref safePos, ref tempVel);
-                rb.position = safePos;
+                WorldBounds2D.Instance.Bounce(ref safePos, ref tempVel);   // 內部會 clamp 位置
 
+                rb.position = safePos;          // 強制停在邊界
+                rb.linearVelocity = Vector2.zero;
+
+                // 播放撞牆特效
                 if (TryGetWallHitFromWorldBounds(nextPos, moveDir, out var hitPoint, out var hitNormal))
                     effectManager.PlayWallHit(hitPoint, hitNormal);
                 else
                     effectManager.PlayWallHit(nextPos, -moveDir);
 
+                OnWallHitEvent?.Invoke();
                 currentSpeed = 0f;
-                rb.linearVelocity = Vector2.zero;
                 effectManager.StopTrail();
                 return;
             }
 
+            // 正常移動
             rb.linearVelocity = velocityVector;
 
+            // 減速
             float damping = 1f - (deceleration * Time.fixedDeltaTime);
             currentSpeed *= Mathf.Clamp01(damping);
             if (currentSpeed < 0.05f) currentSpeed = 0f;
 
             float effectiveMax = GetEffectiveMaxSpeed();
             sweepPower = Mathf.Clamp01(currentSpeed / effectiveMax);
-            effectManager.UpdateTrail(center, moveDir, sweepPower, true);
 
+            effectManager.UpdateTrail(center, moveDir, sweepPower, true);
             OnSweepMove?.Invoke(center, sweepRadius, moveDir, sweepPower);
         }
         else
@@ -281,8 +275,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
 
     private void LateUpdate()
     {
-        // [重點註釋] 極簡跟隨邏輯：利用 LateUpdate 確保在物理位移結束後才改變相機座標，避免畫面微小抖動。
-        // 只拷貝相對位移，不拷貝旋轉，這樣玩家怎麼翻轉都不會影響到 2.5D 的固定視角。
         if (cam != null)
         {
             cam.transform.position = transform.position + cameraOffset;
@@ -299,10 +291,9 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     private void OnPress(InputAction.CallbackContext ctx)
     {
         if (isBeingAbsorbed) return;
-
         isLeftDown = true;
+        OnLeftPressAction?.Invoke();
         if (isRightDown) { BlockBoth(); return; }
-
         effectManager.StopTrail();
         dragStart = ScreenToWorld(pointerPosition.ReadValue<Vector2>());
         currentSpeed = 0f;
@@ -314,14 +305,13 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     private void OnRelease(InputAction.CallbackContext ctx)
     {
         isLeftDown = false;
+        OnLeftReleaseAction?.Invoke();
         if (isBeingAbsorbed) return;
-
         if (blockBoth)
         {
             if (!isRightDown) UnblockBoth();
             return;
         }
-
         effectManager.HideDragLine();
         Vector2 drag = ScreenToWorld(pointerPosition.ReadValue<Vector2>()) - dragStart;
         float len = drag.magnitude;
@@ -337,14 +327,12 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     private void OnRightPress(InputAction.CallbackContext ctx)
     {
         if (isBeingAbsorbed) return;
-
         PlayerAnimatorController.instance?.stateMachine.ChangeState(PlayerAnimatorController.instance.powerState);
         rb.linearVelocity = Vector2.zero;
-
         isRightDown = true;
+        OnRightPressStart?.Invoke();
         rightPressStartTime = Time.time;
         effectManager.StopTrail();
-
         if (isLeftDown) { BlockBoth(); return; }
     }
 
@@ -352,29 +340,24 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     {
         isRightDown = false;
         if (isBeingAbsorbed) return;
-
         if (blockBoth)
         {
             if (!isLeftDown) UnblockBoth();
             return;
         }
-
         float hold = Mathf.Clamp(Time.time - rightPressStartTime, 0f, maxChargeTime);
         float t = Mathf.Clamp01(hold / maxChargeTime);
         Vector2 p = ScreenToWorld(pointerPosition.ReadValue<Vector2>());
         Vector2 c = GetSweepCenter();
         Vector2 dir = p - c;
-
         if (PlayerAnimatorController.instance != null)
         {
             PlayerAnimatorController.instance.anim.SetFloat("ClickX", dir.x);
             PlayerAnimatorController.instance.anim.SetFloat("ClickY", dir.y);
             PlayerAnimatorController.instance.stateMachine.ChangeState(PlayerAnimatorController.instance.releaseState);
         }
-
         if (dir.sqrMagnitude > 0.0001f) chargedDir = dir.normalized;
         Vector2 origin = c + chargedDir * chargeCenterOffset;
-
         OnChargedSweepReleased?.Invoke(hold, t, origin, chargedDir);
         effectManager.HideChargeSweep();
     }
@@ -389,7 +372,11 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         blockBoth = false;
     }
 
-    public void EmitTrashHit(Vector2 hitPoint, Vector2 hitNormal) { effectManager.PlayTrashHit(hitPoint, hitNormal); }
+    public void EmitTrashHit(Vector2 hitPoint, Vector2 hitNormal, TrashType type)
+    {
+        effectManager.PlayTrashHit(hitPoint, hitNormal);
+        OnTrashHitEvent?.Invoke(type);
+    }
 
     public void ExitBlackHole(Vector2 ejectDir, float ejectSpeed)
     {
@@ -400,7 +387,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         isLeftDown = false;
         isRightDown = false;
         _currentStickyLoad = 0f;
-
         moveDir = ejectDir;
         currentSpeed = ejectSpeed;
         SetCollidersEnabled(true);
@@ -434,15 +420,12 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     private Vector2 ScreenToWorld(Vector2 p)
     {
         if (cam == null) return Vector2.zero;
-
         Ray ray = cam.ScreenPointToRay(p);
         Plane groundPlane = new Plane(Vector3.back, Vector3.zero);
-
         if (groundPlane.Raycast(ray, out float enter))
         {
             return ray.GetPoint(enter);
         }
-
         return cam.ScreenToWorldPoint(new Vector3(p.x, p.y, Mathf.Abs(cam.transform.position.z)));
     }
 

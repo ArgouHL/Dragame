@@ -11,6 +11,9 @@ public class UIManager : MonoBehaviour
     [SerializeField, Tooltip("開啟以在 Console 追蹤 UI 與遊戲狀態切換")]
     private bool showDebugLogs = true;
 
+    [Header("=== 分數 UI ===")]
+    [SerializeField] private TMP_Text scoreText;
+
     [Header("=== 垃圾計數 UI ===")]
     [SerializeField] private TMP_Text trashCounterText;
 
@@ -45,6 +48,9 @@ public class UIManager : MonoBehaviour
     private float remainingTime;
     private int lastDisplaySeconds = -1;
 
+    // 記錄當前總分
+    private int currentScore;
+
     private void Awake()
     {
         closeTeachAction = new InputAction("CloseTeach", InputActionType.Button);
@@ -58,10 +64,12 @@ public class UIManager : MonoBehaviour
     {
         TrashCounter.Changed += OnTrashCounterChanged;
 
+        // [重點註釋] 註冊事件監聽，當黑洞吃掉垃圾發出廣播時，呼叫 AddScore
+        BlackHoleObstacle.OnTrashAbsorbedScore += AddScore;
+
         if (continueButton != null) continueButton.onClick.AddListener(ResumeGame);
         if (teachButton != null) teachButton.onClick.AddListener(OnTeachClicked);
         if (pauseRestartButton != null) pauseRestartButton.onClick.AddListener(OnRestartGame);
-
         if (pauseToStartButton != null) pauseToStartButton.onClick.AddListener(OnReturnToStartMenu);
         if (endToStartButton != null) endToStartButton.onClick.AddListener(OnReturnToStartMenu);
 
@@ -74,6 +82,10 @@ public class UIManager : MonoBehaviour
     private void OnDisable()
     {
         TrashCounter.Changed -= OnTrashCounterChanged;
+
+        // 解除註冊，防止切換場景時產生 Memory Leak 錯誤
+        BlackHoleObstacle.OnTrashAbsorbedScore -= AddScore;
+
         if (PlayerController.instance != null) PlayerController.instance.OnModeChanged -= OnSkillModeChanged;
 
         if (continueButton != null) continueButton.onClick.RemoveListener(ResumeGame);
@@ -93,6 +105,10 @@ public class UIManager : MonoBehaviour
         Log("初始化 UI 系統，遊戲開始。");
         isPaused = isTeaching = isGameOver = false;
         remainingTime = gameDuration;
+
+        // 初始化分數
+        currentScore = 0;
+        UpdateScoreText();
 
         pausePanel?.SetActive(false);
         teachPanel?.SetActive(false);
@@ -121,6 +137,21 @@ public class UIManager : MonoBehaviour
             return;
         }
         UpdateTimerText();
+    }
+
+    // 接收來自黑洞的分數，加總並更新 UI
+    private void AddScore(int scoreToAdd)
+    {
+        currentScore += scoreToAdd;
+        UpdateScoreText();
+    }
+
+    private void UpdateScoreText()
+    {
+        if (scoreText != null)
+        {
+            scoreText.text = currentScore.ToString();
+        }
     }
 
     private void OnTrashCounterChanged(int c, int t) => RefreshTrash(c, t);
@@ -238,7 +269,6 @@ public class UIManager : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
-    // [重點註釋] 統一處理跳轉場景邏輯。必須強制恢復 TimeScale，否則主選單可能會因為時停導致 UI 動畫或邏輯卡死。
     private void OnReturnToStartMenu()
     {
         Log("返回主畫面。");
@@ -254,7 +284,6 @@ public class UIManager : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
     }
 
-    // [重點註釋] 封裝 Debug 邏輯，配合前置處理器指令，確保編譯成正式版時完全剔除字串配置 (String Allocation) 的效能消耗。
     private void Log(string message)
     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

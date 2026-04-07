@@ -58,23 +58,16 @@ public class DynamicSpawnManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 一次生成一群垃圾：
-    /// - 同一群靠近一個中心點（集合感）
-    /// - 仍然用 LevelSpawner 的安全距離檢查
-    /// </summary>
     private void SpawnGroupTrash(DynamicSpawnGroup group)
     {
         int amount = Mathf.Max(1, group.spawnAmount);
+        bool hasSpawnedAny = false; // 追蹤這次是否有成功生成物件
 
-        // 隨機選一個象限
         LevelSpawner.SpawnQuadrant randomQuadrant =
             (LevelSpawner.SpawnQuadrant)Random.Range(0, 4);
 
-        // 這一群的中心點
         Vector3 centerPos = spawner.GetRandomPositionInQuadrant(randomQuadrant);
 
-        // 群聚半徑：略小於 minSafeDistance，讓它們靠近但不重疊
         float clusterRadius = spawner.minSafeDistance * 0.9f;
         if (clusterRadius <= 0f)
             clusterRadius = 0.5f;
@@ -82,10 +75,8 @@ public class DynamicSpawnManager : MonoBehaviour
         for (int i = 0; i < amount; i++)
         {
             TrashType type = group.trashTypes[Random.Range(0, group.trashTypes.Count)];
-
             bool spawned = false;
 
-            // 先嘗試在「群聚半徑」內找合法位置
             for (int attempt = 0; attempt < 10; attempt++)
             {
                 Vector2 offset = Random.insideUnitCircle * clusterRadius;
@@ -95,15 +86,25 @@ public class DynamicSpawnManager : MonoBehaviour
                 {
                     spawner.TrySpawnTrashAtPosition(type, candidate);
                     spawned = true;
+                    hasSpawnedAny = true;
                     break;
                 }
             }
 
-            // 若附近塞不下，就退回原本的隨機象限生成
             if (!spawned)
             {
-                spawner.TrySpawnRandomTrash(type, randomQuadrant);
+                if (spawner.TrySpawnRandomTrash(type, randomQuadrant))
+                {
+                    hasSpawnedAny = true;
+                }
             }
+        }
+
+        // [重點註釋] 如果有動態生成新的垃圾，主動通知 LevelSpawner 更新總計數器
+        // 防禦極端情況：避免 UI 顯示已收集完畢，但場上其實還有剛生出來的垃圾
+        if (hasSpawnedAny)
+        {
+            spawner.RecalculateTotalTrash();
         }
     }
 }

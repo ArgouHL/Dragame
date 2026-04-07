@@ -147,7 +147,7 @@ public class LevelSpawner : MonoBehaviour
         if (trashToSpawn == null || trashToSpawn.Count == 0)
         {
             Debug.LogWarning("無法生成隨機垃圾：'trashSpawnList' 未設定或為空。");
-            TrashCounter.SetTotal(CountActiveTrashOnField());
+            RecalculateTotalTrash();
             return;
         }
 
@@ -174,7 +174,7 @@ public class LevelSpawner : MonoBehaviour
 
         Debug.Log($"關卡生成完畢：總共 {totalRandomTrash} 個垃圾需求，成功生成 {trashSpawnedCount} 個。");
 
-        TrashCounter.SetTotal(CountActiveTrashOnField());
+        RecalculateTotalTrash();
     }
 
     private void Shuffle<T>(List<T> list)
@@ -192,7 +192,6 @@ public class LevelSpawner : MonoBehaviour
 
     public bool IsValidSpawnPosition(Vector3 targetPos)
     {
-        // [Why] 改用平方距離 (sqrMagnitude) 取代 Vector2.Distance，避免迴圈內頻繁執行昂貴的開根號運算及 new Vector2 分配
         float minSafeDistSqr = minSafeDistance * minSafeDistance;
 
         foreach (Vector3 occupiedPos in allOccupiedPositions)
@@ -243,17 +242,7 @@ public class LevelSpawner : MonoBehaviour
         }
     }
 
-    private void SpawnTrashAtPosition(TrashType type, Vector3 position)
-    {
-        BaseTrash trash = TrashPool.Instance.GetTrash(type, position);
-        if (trash == null)
-        {
-            Debug.LogWarning($"無法生成垃圾 (類型: {type})：物件池已滿或未預載。");
-            return;
-        }
-        trash.transform.SetParent(trashParentContainer);
-    }
-
+    // [重點註釋] 確保此方法在類別內部，解決 "不存在於目前的內容中" 的錯誤
     private void SpawnObstacleAtPosition(ObstacleType type, Vector3 position)
     {
         BaseObstacle obstacle = ObstaclePool.Instance.GetObstacle(type, position);
@@ -263,6 +252,17 @@ public class LevelSpawner : MonoBehaviour
             return;
         }
         obstacle.transform.SetParent(obstacleParentContainer);
+    }
+
+    private void SpawnTrashAtPosition(TrashType type, Vector3 position)
+    {
+        BaseTrash trash = TrashPool.Instance.GetTrash(type, position);
+        if (trash == null)
+        {
+            Debug.LogWarning($"無法生成垃圾 (類型: {type})：物件池已滿或未預載。");
+            return;
+        }
+        trash.transform.SetParent(trashParentContainer);
     }
 
     public Vector3 GetRandomPositionInQuadrant(SpawnQuadrant quadrant)
@@ -317,9 +317,14 @@ public class LevelSpawner : MonoBehaviour
         return new Vector3(x, y, 0f);
     }
 
+    public void RecalculateTotalTrash()
+    {
+        TrashCounter.SetTotal(CountActiveTrashOnField());
+    }
+
     private int CountActiveTrashOnField()
     {
-        // [Why] 移除棄用的排序參數，並刪除冗餘的 activeInHierarchy 檢查，因為 FindObjectsInactive.Exclude 已自動過濾隱藏物件
+        // [重點註釋] 完全相容 Unity 最新版 API，移除棄用的 SortMode 參數
 #if UNITY_2023_1_OR_NEWER
         BaseTrash[] trashes = Object.FindObjectsByType<BaseTrash>(FindObjectsInactive.Exclude);
 #else

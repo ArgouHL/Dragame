@@ -1,8 +1,13 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
 
+// 強制綁定 AudioEmitter，確保黑洞一定能發出聲音
+[RequireComponent(typeof(AudioEmitter))]
 public class BlackHoleObstacle : BaseObstacle
 {
+    // [重點註釋] 發送帶有分數參數的事件廣播
+    public static event System.Action<int> OnTrashAbsorbedScore;
+
     [Header("黑洞能力設定")]
     [SerializeField] private float absorbRadius = 1f;
     [SerializeField] private Vector2 centerOffset;
@@ -20,6 +25,13 @@ public class BlackHoleObstacle : BaseObstacle
     [SerializeField] private float playerEjectSpeed = 15f;
     [SerializeField] private float playerRotateSpeed = 1f;
 
+    [Header("內建音效設定")]
+    [SerializeField] private AudioEmitter audioEmitter;
+    [SerializeField] private string absorbSound = "Absorb";
+    [SerializeField] private string ejectSound = "Eject";
+    [SerializeField, Tooltip("防連發機制：短時間內吸入大量垃圾時，只播一次音效")]
+    private float absorbCooldown = 0.1f;
+
     [Header("調試設置")]
     [SerializeField] private bool showTriggerGizmos = true;
     [SerializeField] private Color triggerColor = new Color(1f, 0.5f, 0f, 0.3f);
@@ -28,6 +40,7 @@ public class BlackHoleObstacle : BaseObstacle
     private PlayerAbsorbData _playerAbsorb;
     private bool _hasPlayerAbsorb;
     private CircleCollider2D _triggerCollider;
+    private float _lastAbsorbTime = -1f;
 
     public Vector3 CenterPos => transform.position + (Vector3)centerOffset;
 
@@ -61,6 +74,8 @@ public class BlackHoleObstacle : BaseObstacle
         _triggerCollider.isTrigger = true;
         _triggerCollider.offset = centerOffset;
         _triggerCollider.radius = absorbRadius;
+
+        if (audioEmitter == null) audioEmitter = GetComponent<AudioEmitter>();
     }
 
     private void OnTriggerEnter2D(Collider2D other)
@@ -71,8 +86,19 @@ public class BlackHoleObstacle : BaseObstacle
         }
     }
 
+    private void PlayAbsorbSound()
+    {
+        if (audioEmitter != null && Time.time - _lastAbsorbTime > absorbCooldown)
+        {
+            audioEmitter.PlayOneShot(absorbSound);
+            _lastAbsorbTime = Time.time;
+        }
+    }
+
     public void RegisterTrash(BaseTrash trash)
     {
+        PlayAbsorbSound();
+
         _absorbing.Add(new AbsorbData
         {
             trash = trash,
@@ -86,11 +112,14 @@ public class BlackHoleObstacle : BaseObstacle
     {
         if (_hasPlayerAbsorb) return;
 
-        Vector2 dir = Vector2.right; // 預設方向
+        PlayAbsorbSound();
+
+        Vector2 dir = Vector2.right;
 
         if (WorldBounds2D.Instance != null)
         {
-            Vector2 safeCenter = WorldBounds2D.Instance.GetSafeCenter(CenterPos);
+            // 修正處：配合簡化後的地圖邊界，直接取用 GetCenter()
+            Vector2 safeCenter = WorldBounds2D.Instance.GetCenter();
             Vector2 dirToCenter = (safeCenter - (Vector2)CenterPos).normalized;
             if (dirToCenter == Vector2.zero) dirToCenter = Random.insideUnitCircle.normalized;
 
@@ -130,7 +159,6 @@ public class BlackHoleObstacle : BaseObstacle
         Vector3 targetPos = CenterPos;
         float dt = Time.deltaTime;
 
-        // 反向迴圈，方便在遍歷中安全刪除元素
         for (int i = count - 1; i >= 0; i--)
         {
             AbsorbData data = _absorbing[i];
@@ -153,6 +181,9 @@ public class BlackHoleObstacle : BaseObstacle
 
             if (data.elapsed >= trashAbsorbTime)
             {
+                // [重點註釋] 吸收完成時，讀取這顆垃圾的 ScoreValue 並廣播出去
+                OnTrashAbsorbedScore?.Invoke(data.trash.ScoreValue);
+
                 data.trash.ResetState();
 
                 if (TrashPool.Instance != null) TrashPool.Instance.ReturnTrash(data.trash);
@@ -213,6 +244,9 @@ public class BlackHoleObstacle : BaseObstacle
                 {
                     data.timer = 0f;
                     data.state = PlayerState.Ejecting;
+
+                    if (audioEmitter != null) audioEmitter.PlayOneShot(ejectSound);
+
                     data.player.ExitBlackHole(data.ejectDir, playerEjectSpeed);
                 }
                 break;

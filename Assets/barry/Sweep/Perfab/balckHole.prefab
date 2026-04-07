@@ -13,6 +13,8 @@ GameObject:
   - component: {fileID: 5754869622838171507}
   - component: {fileID: 2190927143126933320}
   - component: {fileID: 8563358709643510129}
+  - component: {fileID: 5671448605266119251}
+  - component: {fileID: 3884138428813669090}
   m_Layer: 7
   m_Name: balckHole
   m_TagString: blackHole
@@ -143,6 +145,10 @@ MonoBehaviour:
   playerEjectDuration: 0.5
   playerEjectSpeed: 20
   playerRotateSpeed: 1
+  audioEmitter: {fileID: 0}
+  absorbSound: Absorb
+  ejectSound: Eject
+  absorbCooldown: 0.1
   showTriggerGizmos: 1
   triggerColor: {r: 1, g: 0.58888274, b: 0.1745283, a: 0.3}
 --- !u!114 &2190927143126933320
@@ -198,6 +204,70 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
+--- !u!114 &5671448605266119251
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2391840806549549466}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65ace1b2d0eb27945a98307687960406, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AudioEmitter
+  audioClip: {fileID: 0}
+  audioType: 0
+  playOnStart: 0
+  loop: 1
+  soundLibrary:
+  - soundName: Absorb
+    clip: {fileID: 8300000, guid: d3d923b9af65ffd499b75ce4e9ebe79e, type: 3}
+  - soundName: Eject
+    clip: {fileID: 8300000, guid: 0aa4f19a4b52fcd4391d4c46bf9d2ab7, type: 3}
+--- !u!114 &3884138428813669090
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2391840806549549466}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ba6984dfd85fe840b4a4fcb813fa182, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BaseTrash
+  initialScale: {x: 0, y: 0, z: 0}
+  absorbEffectDuration: 0
+  rotationSpeed: 0
+  trashType: 0
+  scoreValue: 10
+  scaleCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  moveCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  currentVelocity: {x: 0, y: 0}
+  deceleration: 0
+  viewportPadding: 0
+  broomForce: 0
+  trashForce: 0
+  weight: 1
+  collisionCheckRadius: 0
+  hitCooldown: 0
+  collisionDamping: 0
+  minCollisionSpeed: 0
+  sleepSpeedThreshold: 0
+  sleepTime: 0
+  stickSmoothTime: 0.05
+  _isStuck: 0
 --- !u!1 &2883701614384982133
 GameObject:
   m_ObjectHideFlags: 0

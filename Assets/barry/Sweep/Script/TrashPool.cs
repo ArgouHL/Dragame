@@ -4,9 +4,14 @@ using UnityEngine;
 // �U������
 public enum TrashType
 {
-    Banana,
-    Can,
-    Paper,
+    None = 0,
+    Banana = 1,
+    Paper = 2,
+    Can = 3,
+    Sock = 4,
+    Spoon = 5,
+    Glass = 6,
+    Pot = 7
     // �i�X�R...
 }
 
