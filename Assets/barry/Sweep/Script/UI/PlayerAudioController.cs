@@ -16,10 +16,6 @@ public class PlayerAudioController : MonoBehaviour
     private PlayerController player;
     private AudioEmitter emitter;
 
-    [Header("除錯設定")]
-    [Tooltip("打勾時，會在控制台印出所有被觸發的音效事件，發布遊戲前請取消勾選。")]
-    public bool enableDebugLog = true;
-
     [Header("對應音檔名稱 (需與 AudioEmitter 面板設定完全一致)")]
     public string switchSkillSound = "SwitchSkill";
     public string leftPressSound = "LeftPress";
@@ -84,41 +80,28 @@ public class PlayerAudioController : MonoBehaviour
         }
     }
 
-    private void LogTrace(string eventName)
-    {
-        if (enableDebugLog)
-        {
-            Debug.Log($"[PlayerAudioController] 接收到事件：{eventName}，準備通知 Emitter 播放。");
-        }
-    }
-
     private void HandleModeChanged(BroomMode mode)
     {
-        LogTrace("切換技能 (ModeChanged)");
         emitter.PlayOneShot(switchSkillSound);
     }
 
     private void HandleLeftPress()
     {
-        LogTrace("左鍵按下 (LeftPress)");
         emitter.PlayOneShot(leftPressSound);
     }
 
     private void HandleLeftRelease()
     {
-        LogTrace("左鍵放開 (LeftRelease)");
         emitter.PlayOneShot(leftReleaseSound);
     }
 
     private void HandleWallHit()
     {
-        LogTrace("撞到空氣牆 (WallHit)");
         emitter.PlayOneShot(wallHitSound);
     }
 
     private void HandleRightPress()
     {
-        LogTrace("右鍵開始蓄力 (RightPressStart)");
         emitter.PlayLocalLoop(chargingSound, 0.8f);
     }
 
@@ -130,7 +113,6 @@ public class PlayerAudioController : MonoBehaviour
 
     private void HandleChargeRelease(float holdTime, float t, Vector2 origin, Vector2 dir)
     {
-        LogTrace("右鍵放開釋放 (ChargeRelease)");
         if (emitter.IsPlayingLocalLoop(chargingSound))
         {
             emitter.StopLocalLoop();
@@ -152,14 +134,8 @@ public class PlayerAudioController : MonoBehaviour
 
             if (!string.IsNullOrEmpty(soundToPlay))
             {
-                LogTrace($"擊中垃圾：材質 {type} (對應音檔名稱：{soundToPlay})");
                 emitter.PlayOneShot(soundToPlay);
                 _hitCooldowns[type] = Time.time;
-            }
-            else
-            {
-                // 防呆機制：提醒你哪個材質忘記設定了
-                Debug.LogWarning($"[PlayerAudioController] 警告：接收到擊中 {type} 材質，但你在 Trash Hit Mappings 中沒有為它設定對應名稱！");
             }
         }
     }

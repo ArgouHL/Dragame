@@ -120,7 +120,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0.38267413, y: -0.006425675, z: -0.0026616016, w: 0.92385715}
   m_LocalPosition: {x: -9.1, y: 1.46, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.7, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3191481036295086760}
@@ -160,7 +160,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0.08857715, y: 0.23476624}
+  m_Offset: {x: 0.14246655, y: 0.5159521}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -170,7 +170,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1.5923607, y: 1.4645033}
+  m_Size: {x: 4.8191633, y: 4.292388}
   m_EdgeRadius: 0
 --- !u!50 &1979206916652624572
 Rigidbody2D:
@@ -215,7 +215,8 @@ MonoBehaviour:
   absorbEffectDuration: 3
   rotationSpeed: 360
   trashType: 7
-  scoreValue: 10
+  trashTier: 5
+  scoreValue: 150
   scaleCurve:
     serializedVersion: 2
     m_Curve:
@@ -271,12 +272,13 @@ MonoBehaviour:
   trashForce: 10
   weight: 10
   collisionNodes:
-  - {x: 0.12, y: 0.18}
-  collisionCheckRadius: 0.69
-  hitCooldown: 0.2
+  - {x: 0.12, y: 0.47}
+  collisionCheckRadius: 1.71
+  hitCooldown: 0.5
   collisionDamping: 0.6
   minCollisionSpeed: 0.1
   sleepSpeedThreshold: 0.2
   sleepTime: 0.5
   stickSmoothTime: 0.05
+  isDynamicSpawned: 0
   _isStuck: 0

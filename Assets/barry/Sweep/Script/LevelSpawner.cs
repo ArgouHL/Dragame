@@ -5,6 +5,8 @@ using System.Collections.Generic;
 public struct TrashSpawnData
 {
     public TrashType type;
+    [Tooltip("指定要生成的 Tier。若為 0 則不限制，將隨機抽取該類型。")]
+    public int targetTier;
     public int amount;
 }
 
@@ -17,328 +19,218 @@ public struct ObstacleSpawnData
 
 public class LevelSpawner : MonoBehaviour
 {
-    [Header("關卡設定檔")]
-    [Tooltip("拖曳你要用於這一關的 PreloadConfigSO 資產")]
-    [SerializeField]
-    private PreloadConfigSO levelConfig;
+    [Header("關卡設定")]
+    [SerializeField] private PreloadConfigSO levelConfig;
+    [SerializeField] private List<ObstacleSpawnData> obstacleLayout = new List<ObstacleSpawnData>();
 
-    [Header("關卡生成設定 (初始)")]
-    [Tooltip("要在此關卡中固定生成的障礙物列表 (類型與位置)")]
-    [SerializeField]
-    private List<ObstacleSpawnData> obstacleLayout = new List<ObstacleSpawnData>();
+    [Header("開局生成佈局 (畫面內)")]
+    [Tooltip("開場直接出現在玩家視野內的垃圾")]
+    [SerializeField] private List<TrashSpawnData> startInViewTrash = new List<TrashSpawnData>();
 
-    [Tooltip("要在此關卡初始時生成的垃圾列表 (類型與數量)")]
-    [SerializeField]
-    private List<TrashSpawnData> trashSpawnList = new List<TrashSpawnData>();
+    [Header("開局生成佈局 (畫面外)")]
+    [SerializeField] private List<TrashSpawnData> startOutViewTrash = new List<TrashSpawnData>();
 
-    [Header("生成範圍設定")]
-    [Tooltip("生成區域的中心點 (世界座標)")]
-    [SerializeField]
-    private Vector2 centerPoint;
+    [Header("生成安全參數")]
+    [SerializeField] public float minSafeDistance = 0.5f;
+    [SerializeField] private int maxSpawnAttempts = 15;
+    [SerializeField] private Transform trashParent;
+    [SerializeField] private Transform obstacleParent;
 
-    [Tooltip("生成區域的總大小 (寬, 高)")]
-    [SerializeField]
-    private Vector2 spawnAreaSize;
+    private List<Vector3> _permanentOccupiedPos = new List<Vector3>();
 
-    [Header("Runtime 階層管理 (父物件)")]
-    [Tooltip("在遊戲中生成的「垃圾」要放在哪個物件底下")]
-    [SerializeField]
-    private Transform trashParentContainer;
-
-    [Tooltip("在遊戲中生成的「障礙物」要放在哪個物件底下")]
-    [SerializeField]
-    private Transform obstacleParentContainer;
-
-    [Header("垃圾生成安全距離")]
-    [Tooltip("生成垃圾時，離其他物件的最小安全距離")]
-    [SerializeField]
-    public float minSafeDistance;
-
-    [Tooltip("生成位置的重試次數上限，防止因空間不足導致無限迴圈")]
-    [SerializeField]
-    private int maxSpawnAttempts = 20;
-
-    private List<Vector3> allOccupiedPositions = new List<Vector3>();
-
-    public enum SpawnQuadrant
-    {
-        TopRight,
-        TopLeft,
-        BottomLeft,
-        BottomRight
-    }
+    public bool IsReady { get; private set; } = false;
 
     private void Start()
     {
         TrashCounter.Reset();
-
-        if (TrashPool.Instance == null || ObstaclePool.Instance == null)
+        if (TrashPool.Instance == null)
         {
-            Debug.LogError("LevelSpawner: 物件池 (TrashPool 或 ObstaclePool) 的 Singleton 實例不存在！");
+            Debug.LogError("[LevelSpawner] 嚴重錯誤：找不到 TrashPool.Instance，生成終止！");
             return;
         }
-
-        if (levelConfig == null)
+        if (ObstaclePool.Instance == null)
         {
-            Debug.LogError("LevelSpawner: 尚未指定 levelConfig (PreloadConfigSO)！");
-            return;
+            Debug.LogWarning("[LevelSpawner] 找不到 ObstaclePool.Instance，本次將跳過障礙物生成，但不影響垃圾生成。");
         }
-
-        if (trashParentContainer == null)
-            trashParentContainer = new GameObject("--- Trash Container ---").transform;
-
-        if (obstacleParentContainer == null)
-            obstacleParentContainer = new GameObject("--- Obstacle Container ---").transform;
+        if (trashParent == null) trashParent = new GameObject("TrashContainer").transform;
+        if (obstacleParent == null) obstacleParent = new GameObject("ObstacleContainer").transform;
 
         PreloadTrashPool();
         PreloadObstaclePool();
-
-        SpawnLevel(obstacleLayout, trashSpawnList);
+        SpawnInitialLayout();
     }
 
-    public bool TrySpawnRandomTrash(TrashType type, SpawnQuadrant quadrant)
+    private void SpawnInitialLayout()
+    {
+        _permanentOccupiedPos.Clear();
+
+        if (ObstaclePool.Instance != null)
+        {
+            foreach (var ob in obstacleLayout)
+            {
+                if (IsPositionValid(ob.position))
+                {
+                    SpawnObstacleAtPosition(ob.type, ob.position);
+                    _permanentOccupiedPos.Add(ob.position);
+                }
+            }
+        }
+
+        foreach (var data in startInViewTrash)
+        {
+            for (int i = 0; i < data.amount; i++)
+            {
+                TrySpawnRandomTrash(data.type, data.targetTier, true);
+            }
+        }
+
+        foreach (var data in startOutViewTrash)
+        {
+            for (int i = 0; i < data.amount; i++)
+            {
+                TrySpawnRandomTrash(data.type, data.targetTier, false);
+            }
+        }
+
+        RecalculateTotalTrash();
+        Debug.Log($"[LevelSpawner] 開局生成完畢，場上總垃圾數: {TrashCounter.Total}");
+        IsReady = true;
+    }
+
+    public BaseTrash TrySpawnRandomTrash(TrashType type, int targetTier, bool forceInView)
     {
         for (int i = 0; i < maxSpawnAttempts; i++)
         {
-            Vector3 potentialPos = GetRandomPositionInQuadrant(quadrant);
-
-            if (IsValidSpawnPosition(potentialPos))
+            Vector3 pos = forceInView ? GetRandomPosInView() : GetRandomPosOutView();
+            if (IsPositionValid(pos))
             {
-                SpawnTrashAtPosition(type, potentialPos);
-                allOccupiedPositions.Add(potentialPos);
-                return true;
+                BaseTrash spawnedTrash = SpawnTrashAtPosition(type, targetTier, pos);
+                return spawnedTrash;
             }
         }
-
-        return false;
+        return null;
     }
 
-    public bool TrySpawnTrashAtPosition(TrashType type, Vector3 position)
+    private Vector3 GetRandomPosInView()
     {
-        if (!IsValidSpawnPosition(position))
-            return false;
-
-        SpawnTrashAtPosition(type, position);
-        allOccupiedPositions.Add(position);
-        return true;
+        Rect viewRect = GetCameraWorldRect();
+        Vector3 p = new Vector3(Random.Range(viewRect.xMin, viewRect.xMax), Random.Range(viewRect.yMin, viewRect.yMax), 0f);
+        return ClampToWorld(p);
     }
 
-    public void SpawnLevel(List<ObstacleSpawnData> obstaclesToSpawn, List<TrashSpawnData> trashToSpawn)
+    private Vector3 GetRandomPosOutView()
     {
-        allOccupiedPositions.Clear();
-
-        if (obstaclesToSpawn != null)
+        if (WorldBounds2D.Instance == null) return GetRandomPosInView();
+        Rect world = WorldBounds2D.Instance.GetWorldRect();
+        Rect view = GetCameraWorldRect();
+        Rect exclude = new Rect(view.x - 1f, view.y - 1f, view.width + 2f, view.height + 2f);
+        for (int i = 0; i < 10; i++)
         {
-            foreach (ObstacleSpawnData data in obstaclesToSpawn)
+            Vector3 p = new Vector3(Random.Range(world.xMin, world.xMax), Random.Range(world.yMin, world.yMax), 0f);
+            if (!exclude.Contains(p)) return ClampToWorld(p);
+        }
+        return ClampToWorld(new Vector3(Random.Range(world.xMin, world.xMax), Random.Range(world.yMin, world.yMax), 0f));
+    }
+
+    private Rect GetCameraWorldRect()
+    {
+        Camera cam = Camera.main;
+        if (cam == null) return new Rect(-5, -5, 10, 10);
+        Plane p = new Plane(Vector3.back, Vector3.zero);
+        Ray r1 = cam.ViewportPointToRay(new Vector3(0, 0, 0));
+        Ray r2 = cam.ViewportPointToRay(new Vector3(1, 1, 0));
+        p.Raycast(r1, out float d1);
+        p.Raycast(r2, out float d2);
+        return Rect.MinMaxRect(r1.GetPoint(d1).x, r1.GetPoint(d1).y, r2.GetPoint(d2).x, r2.GetPoint(d2).y);
+    }
+
+    private Vector3 ClampToWorld(Vector3 p)
+    {
+        if (WorldBounds2D.Instance == null) return p;
+        Rect r = WorldBounds2D.Instance.GetWorldRect();
+        float pad = 0.5f;
+        p.x = Mathf.Clamp(p.x, r.xMin + pad, r.xMax - pad);
+        p.y = Mathf.Clamp(p.y, r.yMin + pad, r.yMax - pad);
+        return p;
+    }
+
+    private bool IsPositionValid(Vector3 p)
+    {
+        float d2 = minSafeDistance * minSafeDistance;
+
+        // Permanent obstacles (never removed)
+        for (int i = 0; i < _permanentOccupiedPos.Count; i++)
+        {
+            if (Vector3.SqrMagnitude(p - _permanentOccupiedPos[i]) < d2) return false;
+        }
+
+        // Live check active trash (enables respawn in cleared areas - fixes permanent occupation bug)
+        if (TrashPool.Instance != null && TrashPool.Instance.ActiveTrashList != null)
+        {
+            var list = TrashPool.Instance.ActiveTrashList;
+            for (int i = 0; i < list.Count; i++)
             {
-                if (IsValidSpawnPosition(data.position))
+                if (list[i] != null && list[i].gameObject.activeInHierarchy && !list[i].IsAbsorbing)
                 {
-                    SpawnObstacleAtPosition(data.type, data.position);
-                    allOccupiedPositions.Add(data.position);
-                }
-                else
-                {
-                    Debug.LogWarning($"障礙物位置無效或太靠近其他物件: {data.position}");
+                    if (Vector3.SqrMagnitude(p - list[i].transform.position) < d2) return false;
                 }
             }
-        }
-        Debug.Log($"已生成 {obstaclesToSpawn?.Count ?? 0} 個障礙物。");
-
-        if (trashToSpawn == null || trashToSpawn.Count == 0)
-        {
-            Debug.LogWarning("無法生成隨機垃圾：'trashSpawnList' 未設定或為空。");
-            RecalculateTotalTrash();
-            return;
-        }
-
-        List<TrashType> allTrashToSpawn = new List<TrashType>();
-        foreach (TrashSpawnData data in trashToSpawn)
-        {
-            for (int i = 0; i < data.amount; i++)
-                allTrashToSpawn.Add(data.type);
-        }
-
-        Shuffle(allTrashToSpawn);
-
-        int totalRandomTrash = allTrashToSpawn.Count;
-        int trashSpawnedCount = 0;
-
-        for (int i = 0; i < totalRandomTrash; i++)
-        {
-            SpawnQuadrant quadrant = (SpawnQuadrant)(i % 4);
-            TrashType specificType = allTrashToSpawn[i];
-
-            bool success = TrySpawnRandomTrash(specificType, quadrant);
-            if (success) trashSpawnedCount++;
-        }
-
-        Debug.Log($"關卡生成完畢：總共 {totalRandomTrash} 個垃圾需求，成功生成 {trashSpawnedCount} 個。");
-
-        RecalculateTotalTrash();
-    }
-
-    private void Shuffle<T>(List<T> list)
-    {
-        int n = list.Count;
-        while (n > 1)
-        {
-            n--;
-            int k = Random.Range(0, n + 1);
-            T value = list[k];
-            list[k] = list[n];
-            list[n] = value;
-        }
-    }
-
-    public bool IsValidSpawnPosition(Vector3 targetPos)
-    {
-        float minSafeDistSqr = minSafeDistance * minSafeDistance;
-
-        foreach (Vector3 occupiedPos in allOccupiedPositions)
-        {
-            float dx = targetPos.x - occupiedPos.x;
-            float dy = targetPos.y - occupiedPos.y;
-            float distSqr = dx * dx + dy * dy;
-
-            if (distSqr < minSafeDistSqr)
-                return false;
         }
         return true;
     }
 
     private void PreloadTrashPool()
     {
+        if (levelConfig == null) return;
         List<BaseTrash> tempTrashList = new List<BaseTrash>();
         foreach (TrashPreloadConfig config in levelConfig.trashToPreload)
         {
             for (int i = 0; i < config.amount; i++)
             {
-                BaseTrash trash = TrashPool.Instance.GetTrash(config.type, Vector3.zero);
-                if (trash != null)
-                    tempTrashList.Add(trash);
+                BaseTrash trash = TrashPool.Instance.GetTrash(config.type, 0, Vector3.zero);
+                if (trash != null) tempTrashList.Add(trash);
             }
         }
-        foreach (BaseTrash trash in tempTrashList)
-        {
-            TrashPool.Instance.ReturnTrash(trash);
-        }
+        foreach (BaseTrash trash in tempTrashList) TrashPool.Instance.ReturnTrash(trash);
     }
 
     private void PreloadObstaclePool()
     {
+        if (levelConfig == null || ObstaclePool.Instance == null) return;
         List<BaseObstacle> tempObstacleList = new List<BaseObstacle>();
         foreach (ObstaclePreloadConfig config in levelConfig.obstaclesToPreload)
         {
             for (int i = 0; i < config.amount; i++)
             {
                 BaseObstacle obstacle = ObstaclePool.Instance.GetObstacle(config.type, Vector3.zero);
-                if (obstacle != null)
-                    tempObstacleList.Add(obstacle);
+                if (obstacle != null) tempObstacleList.Add(obstacle);
             }
         }
-        foreach (BaseObstacle obstacle in tempObstacleList)
-        {
-            ObstaclePool.Instance.ReturnObstacle(obstacle);
-        }
+        foreach (BaseObstacle obstacle in tempObstacleList) ObstaclePool.Instance.ReturnObstacle(obstacle);
     }
 
-    // [重點註釋] 確保此方法在類別內部，解決 "不存在於目前的內容中" 的錯誤
     private void SpawnObstacleAtPosition(ObstacleType type, Vector3 position)
     {
         BaseObstacle obstacle = ObstaclePool.Instance.GetObstacle(type, position);
-        if (obstacle == null)
-        {
-            Debug.LogWarning($"無法生成障礙物 (類型: {type})：物件池已滿或未預載。");
-            return;
-        }
-        obstacle.transform.SetParent(obstacleParentContainer);
+        if (obstacle != null) obstacle.transform.SetParent(obstacleParent);
     }
 
-    private void SpawnTrashAtPosition(TrashType type, Vector3 position)
+    private BaseTrash SpawnTrashAtPosition(TrashType type, int targetTier, Vector3 position)
     {
-        BaseTrash trash = TrashPool.Instance.GetTrash(type, position);
-        if (trash == null)
-        {
-            Debug.LogWarning($"無法生成垃圾 (類型: {type})：物件池已滿或未預載。");
-            return;
-        }
-        trash.transform.SetParent(trashParentContainer);
-    }
-
-    public Vector3 GetRandomPositionInQuadrant(SpawnQuadrant quadrant)
-    {
-        float minX;
-        float maxX;
-        float minY;
-        float maxY;
-
-        if (WorldBounds2D.Instance != null)
-        {
-            Rect worldRect = WorldBounds2D.Instance.GetWorldRect();
-            minX = worldRect.xMin;
-            maxX = worldRect.xMax;
-            minY = worldRect.yMin;
-            maxY = worldRect.yMax;
-        }
-        else
-        {
-            minX = centerPoint.x - spawnAreaSize.x / 2f;
-            maxX = centerPoint.x + spawnAreaSize.x / 2f;
-            minY = centerPoint.y - spawnAreaSize.y / 2f;
-            maxY = centerPoint.y + spawnAreaSize.y / 2f;
-        }
-
-        float midX = (minX + maxX) * 0.5f;
-        float midY = (minY + maxY) * 0.5f;
-
-        float x = 0f;
-        float y = 0f;
-
-        switch (quadrant)
-        {
-            case SpawnQuadrant.TopRight:
-                x = Random.Range(midX, maxX);
-                y = Random.Range(midY, maxY);
-                break;
-            case SpawnQuadrant.TopLeft:
-                x = Random.Range(minX, midX);
-                y = Random.Range(midY, maxY);
-                break;
-            case SpawnQuadrant.BottomLeft:
-                x = Random.Range(minX, midX);
-                y = Random.Range(minY, midY);
-                break;
-            case SpawnQuadrant.BottomRight:
-                x = Random.Range(midX, maxX);
-                y = Random.Range(minY, midY);
-                break;
-        }
-
-        return new Vector3(x, y, 0f);
+        BaseTrash trash = TrashPool.Instance.GetTrash(type, targetTier, position);
+        if (trash != null) trash.transform.SetParent(trashParent);
+        return trash;
     }
 
     public void RecalculateTotalTrash()
     {
-        TrashCounter.SetTotal(CountActiveTrashOnField());
-    }
-
-    private int CountActiveTrashOnField()
-    {
-        // [重點註釋] 完全相容 Unity 最新版 API，移除棄用的 SortMode 參數
-#if UNITY_2023_1_OR_NEWER
-        BaseTrash[] trashes = Object.FindObjectsByType<BaseTrash>(FindObjectsInactive.Exclude);
-#else
-        BaseTrash[] trashes = Object.FindObjectsOfType<BaseTrash>(false);
-#endif
-
+        if (TrashPool.Instance == null || TrashPool.Instance.ActiveTrashList == null) return;
         int count = 0;
-        for (int i = 0; i < trashes.Length; i++)
+        var list = TrashPool.Instance.ActiveTrashList;
+        for (int i = 0; i < list.Count; i++)
         {
-            BaseTrash t = trashes[i];
-            if (t == null) continue;
-            if (t.IsAbsorbing) continue;
-            count++;
+            if (list[i] != null && list[i].gameObject.activeInHierarchy && !list[i].IsAbsorbing) count++;
         }
-        return count;
+        TrashCounter.SetTotal(count);
     }
 }

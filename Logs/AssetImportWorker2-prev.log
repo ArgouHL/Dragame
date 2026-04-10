@@ -1,11 +1,11 @@
 [Licensing::Module] Trying to connect to existing licensing client channel...
 Built from '6000.4/staging' branch; Version is '6000.4.0f1 (8cf496087c8f) revision 9237654'; Using compiler version '194234433'; Build Type 'Release'
 OS: 'Windows 11  (10.0.26200) Core' Language: 'zh' Physical Memory: 32555 MB
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-barry" at "2026-04-09T23:38:30.7426921Z"
 BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
 System  architecture: x64
 Process architecture: x64
-Date: 2026-04-06T23:46:03Z
-[Licensing::IpcConnector] Successfully connected to: "LicenseClient-barry" at "2026-04-06T23:46:03.0764397Z"
+Date: 2026-04-09T23:38:30Z
 
 COMMAND LINE ARGUMENTS:
 C:\Program Files\Unity\Hub\Editor\6000.4.0f1\Editor\Unity.exe
@@ -19,7 +19,7 @@ C:/Fork/Dragame
 -logFile
 Logs/AssetImportWorker2.log
 -srvPort
-63396
+55787
 -licensingIpc
 LicenseClient-barry
 -force-d3d12
@@ -68,12 +68,12 @@ C:/Fork/Dragame
     "memorysetup-job-temp-allocator-block-size=2097152"
     "memorysetup-job-temp-allocator-block-size-background=1048576"
     "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
-Player connection [25916]  Target information:
+Player connection [21132]  Target information:
 
-Player connection [25916]  * "[IP] 192.168.100.100 [Port] 0 [Flags] 2 [Guid] 2975747031 [EditorId] 2975747031 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-KBI4K9N) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+Player connection [21132]  * "[IP] 192.168.100.101 [Port] 0 [Flags] 2 [Guid] 785792328 [EditorId] 785792328 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-KBI4K9N) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
 
-Player connection [25916] Host joined multi-casting on [225.0.0.222:54997]...
-Player connection [25916] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Player connection [21132] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [21132] Host joined alternative multi-casting on [225.0.0.222:34997]...
 JobSystem: Creating JobQueue using job-worker-count value 9
 Input System module state changed to: Initialized.
 [Physics::Module] Initialized fallback backend.
@@ -85,7 +85,7 @@ Library Redirect Path: Library/
 [Physics::Module] SDK Version: 4.1.2
 [Physics::Module] Integration Version: 1.0.0
 [Physics::Module] Threading Mode: Multi-Threaded
-Refreshing native plugins compatible for Editor in 2.12 ms, found 3 plugins.
+Refreshing native plugins compatible for Editor in 2.59 ms, found 3 plugins.
 Initialize engine version: 6000.4.0f1 (8cf496087c8f)
 [Subsystems] Discovering subsystems at path C:/Program Files/Unity/Hub/Editor/6000.4.0f1/Editor/Data/Resources/UnitySubsystems
 [Subsystems] Discovering subsystems at path C:/Fork/Dragame/Assets
@@ -99,55 +99,55 @@ Direct3D:
     VRAM:            8017 MB
     App VRAM Budget: 7249 MB
     Driver:          32.0.15.9571
+Initialize mono
+Mono path[0] = 'C:/Program Files/Unity/Hub/Editor/6000.4.0f1/Editor/Data/Managed'
+Mono path[1] = 'C:/Program Files/Unity/Hub/Editor/6000.4.0f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
+Mono config path = 'C:/Program Files/Unity/Hub/Editor/6000.4.0f1/Editor/Data/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56720
+CodeReloadManager initialized
+Begin MonoManager ReloadAssembly
 [Licensing::Client] Error: HandshakeResponse reported an error:
 	ResponseCode: 505
 	ResponseStatus: Unsupported protocol version '1.18.1'.
 [Licensing::Module] Error: Failed to handshake to channel: "LicenseClient-barry"
 [Licensing::IpcConnector] LicenseClient-barry channel disconnected successfully.
-[Licensing::IpcConnector] Successfully connected to: "LicenseClient-barry-6000.4.0" at "2026-04-06T23:46:04.0412059Z"
-Initialize mono
-Mono path[0] = 'C:/Program Files/Unity/Hub/Editor/6000.4.0f1/Editor/Data/Managed'
-Mono path[1] = 'C:/Program Files/Unity/Hub/Editor/6000.4.0f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
-Mono config path = 'C:/Program Files/Unity/Hub/Editor/6000.4.0f1/Editor/Data/MonoBleedingEdge/etc'
-Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56440
-CodeReloadManager initialized
-Begin MonoManager ReloadAssembly
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-barry-6000.4.0" at "2026-04-09T23:38:31.6309955Z"
 Registering precompiled unity dll's ...
 Register platform support module: C:/Program Files/Unity/Hub/Editor/6000.4.0f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
-Registered in 0.003402 seconds.
+Registered in 0.001307 seconds.
 Native extension for WindowsStandalone target not found
-[Licensing::Client] Handshaking with LicensingClient:
-  Version:                 1.18.1+9fbee8e
-  Session Id:              e213a4e647f143f7acb3b8cbdb90f34d
-  Correlation Id:          d6435ad1cbde327d4f4cabdeda57f7db
-  External correlation Id: 4067907307312624090
-  Machine Id:              jO6f44PVXooWJYw2aVjHDDzXeCE=
-[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-barry-6000.4.0" (connect: 0.00s, validation: 0.00s, handshake: 1.01s)
-[Licensing::IpcConnector] Successfully connected to: "LicenseClient-barry-6000.4.0-notifications" at "2026-04-06T23:46:05.0568832Z"
-[Licensing::Module] Licensing Background thread has ended after 1.98s
 Package Manager log level set to [2]
 [Package Manager] Failed to launch server process. Reason: Unity was launched with the -noUpm command-line argument
 [Package Manager] Unable to send message (not connected to server process).
 [Package Manager] Cannot connect to Unity Package Manager local server
 ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
 Mono: successfully reloaded assembly
-- Finished resetting the current domain, in  0.443 seconds
-Domain Reload Profiling: 1006ms
-	BeginReloadAssembly (181ms)
-	RebuildCommonClasses (47ms)
-	RebuildNativeTypeToScriptingClass (17ms)
-	initialDomainReloadingComplete (76ms)
-	LoadAllAssembliesAndSetupDomain (241ms)
-		LoadAssemblies (178ms)
-		AnalyzeDomain (230ms)
-			TypeCache.Refresh (229ms)
-				TypeCache.ScanAssembly (210ms)
-	FinalizeReload (445ms)
+- Finished resetting the current domain, in  0.374 seconds
+Domain Reload Profiling: 794ms
+	BeginReloadAssembly (125ms)
+	RebuildCommonClasses (42ms)
+	RebuildNativeTypeToScriptingClass (10ms)
+	initialDomainReloadingComplete (55ms)
+	LoadAllAssembliesAndSetupDomain (187ms)
+		LoadAssemblies (122ms)
+		AnalyzeDomain (177ms)
+			TypeCache.Refresh (175ms)
+				TypeCache.ScanAssembly (160ms)
+	FinalizeReload (376ms)
 		SetupLoadedEditorAssemblies (0ms)
-			InitializePlatformSupportModulesInManaged (55ms)
-			BeforeProcessingInitializeOnLoad (108ms)
-			ProcessInitializeOnLoadAttributes (117ms)
-			ProcessInitializeOnLoadMethodAttributes (91ms)
+			InitializePlatformSupportModulesInManaged (43ms)
+			BeforeProcessingInitializeOnLoad (80ms)
+			ProcessInitializeOnLoadAttributes (101ms)
+			ProcessInitializeOnLoadMethodAttributes (82ms)
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.18.1+9fbee8e
+  Session Id:              141ef0e23467445cb2de534240bb9d5e
+  Correlation Id:          18457e1176c3f2c5f6a1354a49d30dfc
+  External correlation Id: 5637544654906229951
+  Machine Id:              jO6f44PVXooWJYw2aVjHDDzXeCE=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-barry-6000.4.0" (connect: 0.00s, validation: 0.00s, handshake: 0.84s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-barry-6000.4.0-notifications" at "2026-04-09T23:38:32.471093Z"
+[Licensing::Module] Licensing Background thread has ended after 1.73s
 ========================================================================
 Worker process is ready to serve import requests
 Import Worker Mode flag is 0x00
@@ -157,7 +157,7 @@ Begin MonoManager ReloadAssembly
   Id: F4-HG27-CDMD-DJU4-QUQC-XXXX
   Product: Unity Personal
   Type: ULF
-  Expiration: 2026-04-17T00:44:29Z
+  Expiration: 2026-04-20T00:38:10Z
 [Licensing::Module] License group:
   Id: ewogICJzdWJzR3JvdXAiIDogInVuaXR5IGVkaXRvciIsCiAgIm5hbWVzcGFjZSIgOiAidW5pdHlfZWRpdG9yIiwKICAidHlwZSIgOiAiRURJVE9SIiwKICAidGFnIiA6ICJVbml0eVBlcnNvbmFsXXXX
   Product: Unity Personal Version
@@ -202,57 +202,57 @@ Native extension for WindowsStandalone target not found
 [Package Manager] Cannot connect to Unity Package Manager local server
 ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
 Mono: successfully reloaded assembly
-- Finished resetting the current domain, in  0.807 seconds
-Domain Reload Profiling: 1634ms
-	BeginReloadAssembly (186ms)
-		DisableScriptedObjects (6ms)
-		CreateAndSetChildDomain (32ms)
-	RebuildCommonClasses (36ms)
-	RebuildNativeTypeToScriptingClass (11ms)
-	initialDomainReloadingComplete (64ms)
-	LoadAllAssembliesAndSetupDomain (529ms)
-		LoadAssemblies (400ms)
-		AnalyzeDomain (228ms)
-			TypeCache.Refresh (167ms)
-				TypeCache.ScanAssembly (149ms)
-			BuildScriptInfoCaches (48ms)
-			ResolveRequiredComponents (10ms)
-	FinalizeReload (808ms)
+- Finished resetting the current domain, in  0.746 seconds
+Domain Reload Profiling: 1451ms
+	BeginReloadAssembly (147ms)
+		DisableScriptedObjects (4ms)
+		CreateAndSetChildDomain (25ms)
+	RebuildCommonClasses (31ms)
+	RebuildNativeTypeToScriptingClass (14ms)
+	initialDomainReloadingComplete (56ms)
+	LoadAllAssembliesAndSetupDomain (457ms)
+		LoadAssemblies (324ms)
+		AnalyzeDomain (210ms)
+			TypeCache.Refresh (153ms)
+				TypeCache.ScanAssembly (139ms)
+			BuildScriptInfoCaches (47ms)
+			ResolveRequiredComponents (9ms)
+	FinalizeReload (747ms)
 		SetupLoadedEditorAssemblies (0ms)
-			BeforeProcessingInitializeOnLoad (167ms)
-			ProcessInitializeOnLoadAttributes (338ms)
-			ProcessInitializeOnLoadMethodAttributes (78ms)
-			AfterProcessingInitializeOnLoad (4ms)
+			BeforeProcessingInitializeOnLoad (161ms)
+			ProcessInitializeOnLoadAttributes (317ms)
+			ProcessInitializeOnLoadMethodAttributes (71ms)
+			AfterProcessingInitializeOnLoad (5ms)
 		AwakeInstancesAfterBackupRestoration (5ms)
 Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
 Unloading 24 Unused Serialized files (Serialized files now loaded: 0)
-Unloading 6373 unused Assets / (6.9 MB). Loaded Objects now: 7207.
-Memory consumption went from 159.5 MB to 152.6 MB.
-Total: 10.441500 ms (FindLiveObjects: 0.923900 ms CreateObjectMapping: 1.018100 ms MarkObjects: 4.808300 ms  DeleteObjects: 3.688700 ms)
+Unloading 6618 unused Assets / (6.6 MB). Loaded Objects now: 7452.
+Memory consumption went from 159.4 MB to 152.8 MB.
+Total: 8.273400 ms (FindLiveObjects: 0.616400 ms CreateObjectMapping: 0.747500 ms MarkObjects: 3.938600 ms  DeleteObjects: 2.968800 ms)
 
 ========================================================================
 Received Import Request.
-  Time since last request: 44758.482995 seconds.
-  path: Assets/barry/Sweep/VFX/points.prefab
-  importAddress: Guid(372bded14f34a674a84f8f18bd705af5) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/barry/Sweep/VFX/points.prefab using Guid(372bded14f34a674a84f8f18bd705af5) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (Import Result ID: '5062e299132f801b193cf661faf13fc2') in 0.1883121 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=f91681cb63b20fde4d1ca43df2079bcd DependenciesID=679f270b0c1d46f38a95a4e763345fbb StaticDependenciesID=de8719a55560f7a6659954110e4d0af7 
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 6
+  Time since last request: 37255.391870 seconds.
+  path: Assets/barry/Sweep/Script/LevelSpawner.cs
+  importAddress: Guid(7cf09016c29e7234dabff43d51e83257) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
+Start importing Assets/barry/Sweep/Script/LevelSpawner.cs using Guid(7cf09016c29e7234dabff43d51e83257) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (Import Result ID: '6924c3f82ecac2b6a007b7a1b303dfa6') in 0.0682512 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=d7953f34fceab14f8aa14c5f7b4868f3 DependenciesID=f1d45a36e11e0e771007dec37a7ab9d2 StaticDependenciesID=b3ed4886e26267f9611a48e00cb7743c 
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 0
 
 ========================================================================
 Received Import Request.
-  Time since last request: 0.000046 seconds.
-  path: Assets/barry/Sweep/Perfab/paperTrash.prefab
-  importAddress: Guid(925a7260f27d87a49b5ed3c6b2b42b50) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/barry/Sweep/Perfab/paperTrash.prefab using Guid(925a7260f27d87a49b5ed3c6b2b42b50) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (Import Result ID: '0c0c00cb2e0534c8e5b855cd256798cf') in 0.0536519 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=8d16e2fe919cd4360d0d47571e21589d DependenciesID=5f2752a262fd61ddcc4ac2b24d705c11 StaticDependenciesID=8f30b6e845ffdcd0299c511dbc3f20c8 
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 12
+  Time since last request: 0.000024 seconds.
+  path: Assets/barry/Sweep/ScriptableObject/SpawnSetting.asset
+  importAddress: Guid(9301cc2b106912c48b2fa28dbfbad7aa) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
+Start importing Assets/barry/Sweep/ScriptableObject/SpawnSetting.asset using Guid(9301cc2b106912c48b2fa28dbfbad7aa) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (Import Result ID: '866cabc685cad9ba5d0f1ebb26de9175') in 0.008662 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=2b93fbff0b0f0a007b279270ab5a5543 DependenciesID=fd037f12a4c5a1aad3b2e3393adc91f8 StaticDependenciesID=7d04ad766d4afea0febf8efaab106361 
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
 
 ========================================================================
 Received Import Request.
-  Time since last request: 0.000033 seconds.
-  path: Assets/barry/Sweep/Perfab/canTrash2.prefab
-  importAddress: Guid(45cf80ef9227cd64d832726930024179) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/barry/Sweep/Perfab/canTrash2.prefab using Guid(45cf80ef9227cd64d832726930024179) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (Import Result ID: 'b6968e3c08d60e31852d9acd168b3973') in 0.0277009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=ab55e4ecbf08228c02aa2865d6f3ab47 DependenciesID=c3812572daa3b76bcc0fe85790e039ad StaticDependenciesID=f2c89a90004fe908837867877032a34f 
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 12
+  Time since last request: 0.000019 seconds.
+  path: Assets/barry/Sweep/Script/PetAI.cs
+  importAddress: Guid(a58449d558ff9ea43a531cfef89f41f5) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
+Start importing Assets/barry/Sweep/Script/PetAI.cs using Guid(a58449d558ff9ea43a531cfef89f41f5) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (Import Result ID: '1023b76c6c0ac287ef6f0393522100b2') in 0.0045917 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=d0571e59a012c9b572f9b65dc19a6993 DependenciesID=22c338d818f25c7f71c0e1f0a92faeac StaticDependenciesID=2bcff49da27d644b83b3dc5427ec107b 
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 0
 
 ========================================================================
 Received Prepare
@@ -296,31 +296,39 @@ Native extension for WindowsStandalone target not found
 [Package Manager] Cannot connect to Unity Package Manager local server
 ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
 Mono: successfully reloaded assembly
-- Finished resetting the current domain, in  0.742 seconds
-Domain Reload Profiling: 1487ms
-	BeginReloadAssembly (201ms)
-		DisableScriptedObjects (5ms)
-		CreateAndSetChildDomain (47ms)
-	RebuildCommonClasses (32ms)
-	RebuildNativeTypeToScriptingClass (12ms)
-	initialDomainReloadingComplete (55ms)
-	LoadAllAssembliesAndSetupDomain (446ms)
-		LoadAssemblies (368ms)
-		AnalyzeDomain (171ms)
-			TypeCache.Refresh (15ms)
-			BuildScriptInfoCaches (145ms)
-			ResolveRequiredComponents (9ms)
-	FinalizeReload (742ms)
+- Finished resetting the current domain, in  0.747 seconds
+Domain Reload Profiling: 1438ms
+	BeginReloadAssembly (186ms)
+		DisableScriptedObjects (4ms)
+		CreateAndSetChildDomain (42ms)
+	RebuildCommonClasses (29ms)
+	RebuildNativeTypeToScriptingClass (10ms)
+	initialDomainReloadingComplete (51ms)
+	LoadAllAssembliesAndSetupDomain (414ms)
+		LoadAssemblies (338ms)
+		AnalyzeDomain (161ms)
+			TypeCache.Refresh (9ms)
+			BuildScriptInfoCaches (141ms)
+			ResolveRequiredComponents (10ms)
+	FinalizeReload (748ms)
 		SetupLoadedEditorAssemblies (0ms)
-			BeforeProcessingInitializeOnLoad (169ms)
-			ProcessInitializeOnLoadAttributes (315ms)
-			ProcessInitializeOnLoadMethodAttributes (77ms)
+			BeforeProcessingInitializeOnLoad (167ms)
+			ProcessInitializeOnLoadAttributes (316ms)
+			ProcessInitializeOnLoadMethodAttributes (76ms)
 			AfterProcessingInitializeOnLoad (5ms)
-		AwakeInstancesAfterBackupRestoration (17ms)
+		AwakeInstancesAfterBackupRestoration (18ms)
 Unloading 24 Unused Serialized files (Serialized files now loaded: 0)
-Unloading 6371 unused Assets / (6.1 MB). Loaded Objects now: 7225.
-Memory consumption went from 168.3 MB to 162.2 MB.
-Total: 9.110100 ms (FindLiveObjects: 0.833000 ms CreateObjectMapping: 0.860900 ms MarkObjects: 4.674000 ms  DeleteObjects: 2.740100 ms)
+Unloading 6616 unused Assets / (5.4 MB). Loaded Objects now: 7470.
+Memory consumption went from 168.2 MB to 162.8 MB.
+Total: 7.200500 ms (FindLiveObjects: 0.789900 ms CreateObjectMapping: 0.529400 ms MarkObjects: 3.748900 ms  DeleteObjects: 2.131500 ms)
+
+Prepare: number of updated asset objects reloaded= 0
+========================================================================
+Received Prepare
+Unloading 24 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 6610 unused Assets / (5.5 MB). Loaded Objects now: 7470.
+Memory consumption went from 171.5 MB to 166.0 MB.
+Total: 9.258200 ms (FindLiveObjects: 0.978500 ms CreateObjectMapping: 1.284800 ms MarkObjects: 4.344800 ms  DeleteObjects: 2.648500 ms)
 
 Prepare: number of updated asset objects reloaded= 0
 Editor requested this worker to shutdown with reason: Scaling down because of idle timeout

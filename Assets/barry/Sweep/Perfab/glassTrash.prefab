@@ -124,7 +124,8 @@ MonoBehaviour:
   absorbEffectDuration: 3
   rotationSpeed: 360
   trashType: 6
-  scoreValue: 10
+  trashTier: 3
+  scoreValue: 30
   scaleCurve:
     serializedVersion: 2
     m_Curve:
@@ -178,17 +179,18 @@ MonoBehaviour:
   viewportPadding: 0.1
   broomForce: 10
   trashForce: 10
-  weight: 10
+  weight: 3
   collisionNodes:
   - {x: 0.12, y: -0.22}
   - {x: 0.09, y: 0.63}
   collisionCheckRadius: 0.42
-  hitCooldown: 0.2
+  hitCooldown: 0.5
   collisionDamping: 0.6
   minCollisionSpeed: 0.1
   sleepSpeedThreshold: 0.2
   sleepTime: 0.5
   stickSmoothTime: 0.05
+  isDynamicSpawned: 0
   _isStuck: 0
 --- !u!1 &1391828784600101427
 GameObject:

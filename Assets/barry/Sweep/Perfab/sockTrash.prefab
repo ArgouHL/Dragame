@@ -69,7 +69,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0.13335633, y: 0.33862722}
+  m_Offset: {x: 0.20568544, y: 0.54293036}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -79,7 +79,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.7393253, y: 2.1335871}
+  m_Size: {x: 0.8839835, y: 2.5421927}
   m_EdgeRadius: 0
 --- !u!50 &5618930184511276275
 Rigidbody2D:
@@ -124,7 +124,8 @@ MonoBehaviour:
   absorbEffectDuration: 3
   rotationSpeed: 360
   trashType: 4
-  scoreValue: 10
+  trashTier: 3
+  scoreValue: 300
   scaleCurve:
     serializedVersion: 2
     m_Curve:
@@ -174,21 +175,22 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   currentVelocity: {x: 0, y: 0}
-  deceleration: 5
+  deceleration: 8
   viewportPadding: 0.1
   broomForce: 10
   trashForce: 10
-  weight: 10
+  weight: 1
   collisionNodes:
-  - {x: 0.15, y: -0.22}
-  - {x: 0.24, y: 0.63}
-  collisionCheckRadius: 0.42
-  hitCooldown: 0.2
+  - {x: 0.15, y: -0.23}
+  - {x: 0.24, y: 0.87}
+  collisionCheckRadius: 0.6
+  hitCooldown: 0.5
   collisionDamping: 0.6
   minCollisionSpeed: 0.1
   sleepSpeedThreshold: 0.2
   sleepTime: 0.5
   stickSmoothTime: 0.05
+  isDynamicSpawned: 0
   _isStuck: 0
 --- !u!1 &6553327093580168116
 GameObject:

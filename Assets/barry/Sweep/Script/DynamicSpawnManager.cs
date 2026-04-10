@@ -1,110 +1,159 @@
+using System.Collections;
 using UnityEngine;
-using System.Collections.Generic;
-
-[System.Serializable]
-public class DynamicSpawnGroup
-{
-    [Tooltip("這一組每幾秒生成一次")]
-    public float spawnInterval = 2f;
-
-    [Tooltip("一次生成多少個垃圾")]
-    public int spawnAmount = 1;
-
-    [Tooltip("從這一組裡的垃圾隨機挑一個生成")]
-    public List<TrashType> trashTypes = new List<TrashType>();
-
-    [Tooltip("是否啟用這一組動態生成")]
-    public bool enable = true;
-
-    [HideInInspector]
-    public float timer;
-}
 
 public class DynamicSpawnManager : MonoBehaviour
 {
-    [Header("動態生成總開關")]
+    public static DynamicSpawnManager Instance { get; private set; }
+
+    [Header("動態補給配置")]
     [SerializeField] private bool enableDynamicSpawn = true;
+    [SerializeField] private int maxTrashOnField = 30;
+    [SerializeField] private SpawnWeightConfig weightConfig;
 
-    [Header("動態生成組 (一組 = 多種垃圾 + 間隔時間 + 數量)")]
-    [SerializeField] private List<DynamicSpawnGroup> spawnGroups = new List<DynamicSpawnGroup>();
-
-    [Header("依賴的生成器")]
+    [Header("依賴引用")]
     [SerializeField] private LevelSpawner spawner;
+    [SerializeField] private PetAI pet;
+
+    [Header("除錯設定")]
+    [SerializeField] private bool showDebugLog = true;
+
+    private bool _isInitialized = false;
+    private TrashPool _trashPool;
+    private int _currentDynamicTrashCount = 0;
+    private Coroutine _refillRoutine;
 
     private void Awake()
     {
-        if (spawner == null)
-            spawner = GetComponent<LevelSpawner>();
-    }
-
-    private void Update()
-    {
-        if (!enableDynamicSpawn) return;
-        if (spawner == null) return;
-
-        foreach (var group in spawnGroups)
+        if (Instance != null && Instance != this)
         {
-            if (!group.enable) continue;
-            if (group.trashTypes == null || group.trashTypes.Count == 0) continue;
-            if (group.spawnInterval <= 0f) continue;
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
 
-            group.timer += Time.deltaTime;
-
-            if (group.timer >= group.spawnInterval)
-            {
-                group.timer = 0f;
-                SpawnGroupTrash(group);
-            }
+        if (spawner == null && !TryGetComponent(out spawner))
+        {
+            Debug.LogError("[DynamicSpawnManager] 缺失 LevelSpawner 依賴！", this);
+            enabled = false;
         }
     }
 
-    private void SpawnGroupTrash(DynamicSpawnGroup group)
+    private IEnumerator Start()
     {
-        int amount = Mathf.Max(1, group.spawnAmount);
-        bool hasSpawnedAny = false; // 追蹤這次是否有成功生成物件
+        if (spawner == null) yield break;
 
-        LevelSpawner.SpawnQuadrant randomQuadrant =
-            (LevelSpawner.SpawnQuadrant)Random.Range(0, 4);
+        if (showDebugLog) Debug.Log("[DynamicSpawnManager] 等待 LevelSpawner 佈局完成...");
 
-        Vector3 centerPos = spawner.GetRandomPositionInQuadrant(randomQuadrant);
+        while (!spawner.IsReady) yield return null;
 
-        float clusterRadius = spawner.minSafeDistance * 0.9f;
-        if (clusterRadius <= 0f)
-            clusterRadius = 0.5f;
-
-        for (int i = 0; i < amount; i++)
+        // 重點邏輯：確保在 LevelSpawner 生成完 Obstacle (Pet) 後，才進行綁定
+        if (pet == null)
         {
-            TrashType type = group.trashTypes[Random.Range(0, group.trashTypes.Count)];
-            bool spawned = false;
-
-            for (int attempt = 0; attempt < 10; attempt++)
-            {
-                Vector2 offset = Random.insideUnitCircle * clusterRadius;
-                Vector3 candidate = centerPos + new Vector3(offset.x, offset.y, 0f);
-
-                if (spawner.IsValidSpawnPosition(candidate))
-                {
-                    spawner.TrySpawnTrashAtPosition(type, candidate);
-                    spawned = true;
-                    hasSpawnedAny = true;
-                    break;
-                }
-            }
-
-            if (!spawned)
-            {
-                if (spawner.TrySpawnRandomTrash(type, randomQuadrant))
-                {
-                    hasSpawnedAny = true;
-                }
-            }
+#if UNITY_2021_3_18_OR_NEWER || UNITY_2022_2_OR_NEWER
+            pet = UnityEngine.Object.FindAnyObjectByType<PetAI>();
+#else
+            pet = UnityEngine.Object.FindObjectOfType<PetAI>();
+#endif
         }
 
-        // [重點註釋] 如果有動態生成新的垃圾，主動通知 LevelSpawner 更新總計數器
-        // 防禦極端情況：避免 UI 顯示已收集完畢，但場上其實還有剛生出來的垃圾
-        if (hasSpawnedAny)
+        if (pet == null)
         {
-            spawner.RecalculateTotalTrash();
+            Debug.LogError("[DynamicSpawnManager] LevelSpawner 已就緒，但場上依然找不到 PetAI！請確認 Obstacle 是否正確掛載 PetAI 腳本。", this);
+            enabled = false;
+            yield break;
         }
+
+        _trashPool = TrashPool.Instance;
+        _isInitialized = true;
+
+        if (showDebugLog) Debug.Log($"[DynamicSpawnManager] 依賴全數就緒。準備首次觸發生成，當前數量: {_currentDynamicTrashCount}");
+        TriggerRefill();
+    }
+
+    public void OnDynamicTrashConsumed()
+    {
+        if (!enableDynamicSpawn || !_isInitialized) return;
+
+        _currentDynamicTrashCount = Mathf.Max(0, _currentDynamicTrashCount - 1);
+        if (showDebugLog) Debug.Log($"[DynamicSpawnManager] 偵測到垃圾被消耗。當前數量: {_currentDynamicTrashCount}/{maxTrashOnField}，準備觸發補充。");
+
+        TriggerRefill();
+    }
+
+    private void TriggerRefill()
+    {
+        if (!enableDynamicSpawn || !_isInitialized)
+        {
+            if (showDebugLog) Debug.LogWarning("[DynamicSpawnManager] 觸發補充失敗：未啟用動態生成或未初始化完成。");
+            return;
+        }
+
+        if (_refillRoutine == null)
+        {
+            if (showDebugLog) Debug.Log("[DynamicSpawnManager] 啟動補充協程。");
+            _refillRoutine = StartCoroutine(RefillCoroutine());
+        }
+        else
+        {
+            if (showDebugLog) Debug.Log("[DynamicSpawnManager] 補充協程已在運行中，忽略本次觸發。");
+        }
+    }
+
+    private IEnumerator RefillCoroutine()
+    {
+        if (showDebugLog) Debug.Log($"[DynamicSpawnManager] 開始執行補充迴圈，目標數量: {maxTrashOnField}");
+
+        while (_currentDynamicTrashCount < maxTrashOnField)
+        {
+            if (weightConfig == null)
+            {
+                Debug.LogError("[DynamicSpawnManager] 缺失 SpawnWeightConfig 綁定！", this);
+                break;
+            }
+
+            int targetTier = weightConfig.GetRandomTier(pet.CurrentMaxEatTier);
+            TrashType type = _trashPool.GetRandomTrashTypeByTier(targetTier);
+
+            if (type == TrashType.None)
+            {
+                if (showDebugLog) Debug.LogWarning($"[DynamicSpawnManager] 獲取不到對應階級的 TrashType (Tier: {targetTier})，中斷補充迴圈。");
+                break;
+            }
+
+            BaseTrash spawnedTrash = spawner.TrySpawnRandomTrash(type, targetTier, false);
+            if (spawnedTrash != null)
+            {
+                spawnedTrash.isDynamicSpawned = true;
+                _currentDynamicTrashCount++;
+                spawner.RecalculateTotalTrash();
+
+                if (showDebugLog) Debug.Log($"[DynamicSpawnManager] 成功生成動態垃圾。類型: {type}, 階級: {targetTier}。當前總數: {_currentDynamicTrashCount}/{maxTrashOnField}");
+            }
+            else
+            {
+                if (showDebugLog) Debug.LogWarning($"[DynamicSpawnManager] Spawner 生成失敗或回傳空值 (類型: {type}, 階級: {targetTier})。");
+            }
+
+            yield return null;
+        }
+
+        if (showDebugLog) Debug.Log($"[DynamicSpawnManager] 補充協程結束。最終數量: {_currentDynamicTrashCount}/{maxTrashOnField}");
+        _refillRoutine = null;
+    }
+
+    // --- 以下為除錯用右鍵選單功能 ---
+
+    [ContextMenu("Debug: 強制觸發補充 (Trigger Refill)")]
+    private void DebugForceRefill()
+    {
+        if (showDebugLog) Debug.Log("[DynamicSpawnManager - Debug] 從 Inspector 強制觸發補充。");
+        TriggerRefill();
+    }
+
+    [ContextMenu("Debug: 模擬消耗一個垃圾 (Simulate Consume)")]
+    private void DebugSimulateConsume()
+    {
+        if (showDebugLog) Debug.Log("[DynamicSpawnManager - Debug] 從 Inspector 模擬消耗垃圾。");
+        OnDynamicTrashConsumed();
     }
 }

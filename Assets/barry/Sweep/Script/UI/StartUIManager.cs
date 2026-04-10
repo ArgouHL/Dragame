@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.Video;
 
 public class StartUIManager : MonoBehaviour
 {
@@ -11,10 +12,16 @@ public class StartUIManager : MonoBehaviour
     [SerializeField] private Button pokedexButton;
     [SerializeField] private Button exitButton;
 
+    [Header("=== 影片播放設定 ===")]
+    [SerializeField] private VideoPlayer videoPlayer;
+    [SerializeField] private GameObject videoPanel;
+
     [Header("=== 可選跳轉場景名稱 ===")]
     [SerializeField] private string gameSceneName = "GameScene";
     [SerializeField] private string rankingSceneName = "";
     [SerializeField] private string pokedexSceneName = "";
+
+    private bool isPlayingVideo = false;
 
     private void OnEnable()
     {
@@ -22,6 +29,12 @@ public class StartUIManager : MonoBehaviour
         if (rankingButton != null) rankingButton.onClick.AddListener(OnRankingClicked);
         if (pokedexButton != null) pokedexButton.onClick.AddListener(OnPokedexClicked);
         if (exitButton != null) exitButton.onClick.AddListener(OnExitGame);
+
+        // 註冊影片播放結束的事件
+        if (videoPlayer != null)
+        {
+            videoPlayer.loopPointReached += OnVideoFinished;
+        }
     }
 
     private void OnDisable()
@@ -30,6 +43,12 @@ public class StartUIManager : MonoBehaviour
         if (rankingButton != null) rankingButton.onClick.RemoveListener(OnRankingClicked);
         if (pokedexButton != null) pokedexButton.onClick.RemoveListener(OnPokedexClicked);
         if (exitButton != null) exitButton.onClick.RemoveListener(OnExitGame);
+
+        // 取消註冊影片播放結束的事件
+        if (videoPlayer != null)
+        {
+            videoPlayer.loopPointReached -= OnVideoFinished;
+        }
     }
 
     private void Start()
@@ -38,15 +57,57 @@ public class StartUIManager : MonoBehaviour
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
 
-        if (startPanel != null)
+        if (startPanel != null) startPanel.SetActive(true);
+        if (videoPanel != null) videoPanel.SetActive(false); // 確保遊戲開始時影片面板是隱藏的
+    }
+
+    private void Update()
+    {
+        // 偵測是否正在播放影片，且玩家按下了滑鼠左鍵
+        if (isPlayingVideo && Input.GetMouseButtonDown(0))
         {
-            startPanel.SetActive(true);
+            SkipVideo();
         }
     }
 
     private void OnStartGame()
     {
         Time.timeScale = 1f;
+
+        // 檢查是否有配置影片播放器
+        if (videoPlayer != null && videoPanel != null)
+        {
+            if (startPanel != null) startPanel.SetActive(false); // 隱藏主選單
+            videoPanel.SetActive(true); // 顯示影片畫布
+            videoPlayer.Play();
+            isPlayingVideo = true;
+        }
+        else
+        {
+            // 如果沒有配置影片，直接載入遊戲場景
+            LoadGameScene();
+        }
+    }
+
+    private void OnVideoFinished(VideoPlayer vp)
+    {
+        // 影片自然播放完畢後觸發
+        LoadGameScene();
+    }
+
+    private void SkipVideo()
+    {
+        // 玩家點擊左鍵強制中斷影片
+        if (videoPlayer != null)
+        {
+            videoPlayer.Stop();
+        }
+        LoadGameScene();
+    }
+
+    private void LoadGameScene()
+    {
+        isPlayingVideo = false;
         SceneManager.LoadScene(gameSceneName);
     }
 

@@ -4,6 +4,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.Collections;
 
 public class UIManager : MonoBehaviour
 {
@@ -13,6 +14,14 @@ public class UIManager : MonoBehaviour
 
     [Header("=== 分數 UI ===")]
     [SerializeField] private TMP_Text scoreText;
+
+    [Header("=== 分數動態視覺 (Juice) ===")]
+    [SerializeField, Tooltip("加分時放大的最大倍率")]
+    private float punchScaleMultiplier = 1.5f;
+    [SerializeField, Tooltip("動效演出時間(秒)")]
+    private float punchDuration = 0.2f;
+    [SerializeField, Tooltip("加分瞬間的高亮顏色")]
+    private Color punchColor = new Color(1f, 0.8f, 0f, 1f);
 
     [Header("=== 垃圾計數 UI ===")]
     [SerializeField] private TMP_Text trashCounterText;
@@ -26,6 +35,17 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Image skill2Icon;
     [SerializeField, Range(0f, 1f)] private float inactiveAlpha = 0.3f;
 
+    [Header("=== 右鍵技能 UI ===")]
+    [SerializeField] private Image rightSkillIcon;
+    [SerializeField] private TMP_Text rightSkillCooldownText;
+    [SerializeField, Tooltip("冷卻時的圖標顏色(模擬黑白/暗化)")]
+    private Color onCooldownColor = new Color(0.3f, 0.3f, 0.3f, 1f);
+
+    [Header("=== 黑洞等級 UI ===")]
+    [SerializeField] private Image blackHoleLevelIcon;
+    [SerializeField, Tooltip("請依序放入LV1~LV5的圖片 (Index 0 = LV1)")]
+    private Sprite[] levelSprites;
+
     [Header("=== 暫停選單 UI ===")]
     [SerializeField] private GameObject pausePanel;
     [SerializeField] private Button continueButton;
@@ -36,6 +56,7 @@ public class UIManager : MonoBehaviour
 
     [Header("=== 結束 UI ===")]
     [SerializeField] private GameObject endPanel;
+    [SerializeField] private TMP_Text endScoreText; // 新增這行來綁定結算分數文字
     [SerializeField] private Button endToStartButton;
 
     [Header("=== 輸入綁定 ===")]
@@ -48,8 +69,11 @@ public class UIManager : MonoBehaviour
     private float remainingTime;
     private int lastDisplaySeconds = -1;
 
-    // 記錄當前總分
+    // 記錄當前總分與動效狀態
     private int currentScore;
+    private Vector3 _originalScoreScale;
+    private Color _originalScoreColor;
+    private Coroutine _scorePunchRoutine;
 
     private void Awake()
     {
@@ -64,8 +88,9 @@ public class UIManager : MonoBehaviour
     {
         TrashCounter.Changed += OnTrashCounterChanged;
 
-        // [重點註釋] 註冊事件監聽，當黑洞吃掉垃圾發出廣播時，呼叫 AddScore
         BlackHoleObstacle.OnTrashAbsorbedScore += AddScore;
+        PetAI.OnVomitPenalty += AddScore;
+        PetAI.OnPetLevelChanged += UpdateBlackHoleLevelUI;
 
         if (continueButton != null) continueButton.onClick.AddListener(ResumeGame);
         if (teachButton != null) teachButton.onClick.AddListener(OnTeachClicked);
@@ -83,10 +108,15 @@ public class UIManager : MonoBehaviour
     {
         TrashCounter.Changed -= OnTrashCounterChanged;
 
-        // 解除註冊，防止切換場景時產生 Memory Leak 錯誤
         BlackHoleObstacle.OnTrashAbsorbedScore -= AddScore;
+        PetAI.OnVomitPenalty -= AddScore;
+        PetAI.OnPetLevelChanged -= UpdateBlackHoleLevelUI;
 
-        if (PlayerController.instance != null) PlayerController.instance.OnModeChanged -= OnSkillModeChanged;
+        if (PlayerController.instance != null)
+        {
+            PlayerController.instance.OnModeChanged -= OnSkillModeChanged;
+            PlayerController.instance.OnRightSkillCooldownUpdate -= UpdateRightSkillCooldownUI;
+        }
 
         if (continueButton != null) continueButton.onClick.RemoveListener(ResumeGame);
         if (teachButton != null) teachButton.onClick.RemoveListener(OnTeachClicked);
@@ -106,9 +136,14 @@ public class UIManager : MonoBehaviour
         isPaused = isTeaching = isGameOver = false;
         remainingTime = gameDuration;
 
-        // 初始化分數
+        if (scoreText != null)
+        {
+            _originalScoreScale = scoreText.transform.localScale;
+            _originalScoreColor = scoreText.color;
+        }
+
         currentScore = 0;
-        UpdateScoreText();
+        UpdateScoreText(false);
 
         pausePanel?.SetActive(false);
         teachPanel?.SetActive(false);
@@ -121,6 +156,10 @@ public class UIManager : MonoBehaviour
         {
             PlayerController.instance.OnModeChanged += OnSkillModeChanged;
             OnSkillModeChanged(PlayerController.instance.currentMode);
+
+            // 訂閱冷卻事件並手動刷新一次初始狀態
+            PlayerController.instance.OnRightSkillCooldownUpdate += UpdateRightSkillCooldownUI;
+            UpdateRightSkillCooldownUI(0f, 1f);
         }
         SetGameState(true);
     }
@@ -139,19 +178,68 @@ public class UIManager : MonoBehaviour
         UpdateTimerText();
     }
 
-    // 接收來自黑洞的分數，加總並更新 UI
     private void AddScore(int scoreToAdd)
     {
         currentScore += scoreToAdd;
-        UpdateScoreText();
+        UpdateScoreText(true);
     }
 
-    private void UpdateScoreText()
+    private void UpdateScoreText(bool playAnimation)
     {
         if (scoreText != null)
         {
             scoreText.text = currentScore.ToString();
+
+            if (playAnimation)
+            {
+                TriggerScorePunchAnim();
+            }
         }
+    }
+
+    private void TriggerScorePunchAnim()
+    {
+        if (_scorePunchRoutine != null)
+        {
+            StopCoroutine(_scorePunchRoutine);
+        }
+        _scorePunchRoutine = StartCoroutine(ScorePunchCoroutine());
+    }
+
+    private IEnumerator ScorePunchCoroutine()
+    {
+        float halfDuration = punchDuration * 0.5f;
+        float elapsed = 0f;
+
+        Vector3 targetScale = _originalScoreScale * punchScaleMultiplier;
+
+        while (elapsed < halfDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = elapsed / halfDuration;
+            float easeT = t * (2f - t);
+
+            scoreText.transform.localScale = Vector3.Lerp(_originalScoreScale, targetScale, easeT);
+            scoreText.color = Color.Lerp(_originalScoreColor, punchColor, easeT);
+            yield return null;
+        }
+
+        elapsed = 0f;
+
+        while (elapsed < halfDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = elapsed / halfDuration;
+            float easeT = t * t;
+
+            scoreText.transform.localScale = Vector3.Lerp(targetScale, _originalScoreScale, easeT);
+            scoreText.color = Color.Lerp(punchColor, _originalScoreColor, easeT);
+            yield return null;
+        }
+
+        scoreText.transform.localScale = _originalScoreScale;
+        scoreText.color = _originalScoreColor;
+        _scorePunchRoutine = null;
     }
 
     private void OnTrashCounterChanged(int c, int t) => RefreshTrash(c, t);
@@ -159,10 +247,6 @@ public class UIManager : MonoBehaviour
     private void RefreshTrash(int collected, int total)
     {
         if (trashCounterText != null) trashCounterText.text = $"{collected}/{total}";
-        if (!isGameOver && total > 0 && collected >= total)
-        {
-            GameOver("已收集所有垃圾");
-        }
     }
 
     private void UpdateTimerText()
@@ -186,6 +270,39 @@ public class UIManager : MonoBehaviour
     {
         if (img == null) return;
         var c = img.color; c.a = alpha; img.color = c;
+    }
+
+    // [重點註釋] 接收冷卻廣播，更新圖標顏色與文字狀態
+    private void UpdateRightSkillCooldownUI(float currentCooldown, float maxCooldown)
+    {
+        if (rightSkillIcon == null) return;
+
+        if (currentCooldown > 0f)
+        {
+            rightSkillIcon.color = onCooldownColor;
+            if (rightSkillCooldownText != null)
+            {
+                rightSkillCooldownText.gameObject.SetActive(true);
+                // 使用 CeilToInt，這樣 4.2 秒會顯示 5，0.1 秒會顯示 1，符合玩家直覺
+                rightSkillCooldownText.text = Mathf.CeilToInt(currentCooldown).ToString();
+            }
+        }
+        else
+        {
+            rightSkillIcon.color = Color.white;
+            if (rightSkillCooldownText != null)
+            {
+                rightSkillCooldownText.gameObject.SetActive(false);
+            }
+        }
+    }
+
+    private void UpdateBlackHoleLevelUI(int petLevel)
+    {
+        if (blackHoleLevelIcon == null || levelSprites == null || levelSprites.Length == 0) return;
+
+        int safeIndex = Mathf.Clamp(petLevel, 0, levelSprites.Length - 1);
+        blackHoleLevelIcon.sprite = levelSprites[safeIndex];
     }
 
     private void OnPauseActionTriggered(InputAction.CallbackContext context)
@@ -254,6 +371,13 @@ public class UIManager : MonoBehaviour
         isPaused = isTeaching = false;
         pausePanel?.SetActive(false);
         teachPanel?.SetActive(false);
+
+        // 新增這區塊：更新結算畫面的分數
+        if (endScoreText != null)
+        {
+            endScoreText.text = currentScore.ToString();
+        }
+
         if (endPanel != null)
         {
             endPanel.SetActive(true);

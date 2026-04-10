@@ -1,4 +1,3 @@
-// WorldBounds2D.cs
 using UnityEngine;
 
 public class WorldBounds2D : MonoBehaviour
@@ -48,8 +47,7 @@ public class WorldBounds2D : MonoBehaviour
     }
 
     /// <summary>
-    /// 把位置夾回邊界內，並移除往外的速度分量
-    /// 這不是反彈，是「空氣牆」式阻擋
+    /// 把位置夾回邊界內，並移除往外的速度分量 (空氣牆式阻擋)
     /// </summary>
     public bool ConstrainToBounds(ref Vector2 pos, ref Vector2 velocity, float padding = 0f)
     {
@@ -90,11 +88,36 @@ public class WorldBounds2D : MonoBehaviour
     }
 
     /// <summary>
-    /// 舊方法保留相容：改成空氣牆式限制
+    /// [重點註釋] 真正的物理反彈，根據傳入的彈力係數 (bounciness) 反轉速度
     /// </summary>
-    public void Bounce(ref Vector2 pos, ref Vector2 velocity, float padding = 0f)
+    public void Bounce(ref Vector2 pos, ref Vector2 velocity, float padding = 0f, float bounciness = 1f)
     {
-        ConstrainToBounds(ref pos, ref velocity, padding);
+        float minX = rectMin.x + padding;
+        float maxX = rectMax.x - padding;
+        float minY = rectMin.y + padding;
+        float maxY = rectMax.y - padding;
+
+        if (pos.x < minX)
+        {
+            pos.x = minX;
+            if (velocity.x < 0f) velocity.x = -velocity.x * bounciness;
+        }
+        else if (pos.x > maxX)
+        {
+            pos.x = maxX;
+            if (velocity.x > 0f) velocity.x = -velocity.x * bounciness;
+        }
+
+        if (pos.y < minY)
+        {
+            pos.y = minY;
+            if (velocity.y < 0f) velocity.y = -velocity.y * bounciness;
+        }
+        else if (pos.y > maxY)
+        {
+            pos.y = maxY;
+            if (velocity.y > 0f) velocity.y = -velocity.y * bounciness;
+        }
     }
 
     /// <summary>

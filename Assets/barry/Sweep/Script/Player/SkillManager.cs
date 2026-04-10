@@ -31,6 +31,12 @@ public class SkillManager : MonoBehaviour
     private PlayerController player;
     private ContactFilter2D trashFilter;
 
+    // 紀錄基準力度，避免重複乘法導致數值崩潰
+    private float _baseMinSweepForce;
+    private float _baseMaxSweepForce;
+    private float _baseMinForceMultiplier;
+    private float _baseMaxForceMultiplier;
+
     private void Awake()
     {
         player = GetComponent<PlayerController>();
@@ -47,6 +53,11 @@ public class SkillManager : MonoBehaviour
             if (sweepCollider) sweepCollider.isTrigger = true;
             chargedSweepRoot.gameObject.SetActive(false);
         }
+
+        _baseMinSweepForce = minSweepForce;
+        _baseMaxSweepForce = maxSweepForce;
+        _baseMinForceMultiplier = minForceMultiplier;
+        _baseMaxForceMultiplier = maxForceMultiplier;
     }
 
     private void OnEnable()
@@ -57,6 +68,8 @@ public class SkillManager : MonoBehaviour
         player.OnChargedSweepReleased += HandleChargedSweepReleased;
         player.OnModeChanged += HandleModeChanged;
         player.OnAbsorbedByBlackHole += HandleAbsorbedByBlackHole;
+
+        player.OnScaleChanged += HandleScaleChanged;
     }
 
     private void OnDisable()
@@ -67,7 +80,22 @@ public class SkillManager : MonoBehaviour
         player.OnChargedSweepReleased -= HandleChargedSweepReleased;
         player.OnModeChanged -= HandleModeChanged;
         player.OnAbsorbedByBlackHole -= HandleAbsorbedByBlackHole;
+
+        player.OnScaleChanged -= HandleScaleChanged;
         ReleaseAllCapturedTrash();
+    }
+
+    private void HandleScaleChanged(float multiplier)
+    {
+        minSweepForce = _baseMinSweepForce * multiplier;
+        maxSweepForce = _baseMaxSweepForce * multiplier;
+        minForceMultiplier = _baseMinForceMultiplier * multiplier;
+        maxForceMultiplier = _baseMaxForceMultiplier * multiplier;
+
+        if (chargedSweepRoot != null)
+        {
+            chargedSweepRoot.localScale = Vector3.one * multiplier;
+        }
     }
 
     private void FixedUpdate()
@@ -124,14 +152,16 @@ public class SkillManager : MonoBehaviour
                 }
             }
         }
-        if (totalWeight > 0f) player.ApplyHitSlowdown(totalWeight, power01);
     }
 
     private void ScanForNewStickyTrash(Vector2 center)
     {
         nearbyTrashBuffer.Clear();
-        float catchRadius = player.sweepRadius * magnetRadiusMultiplier;
+
+        // [重點註釋] 讓吸附半徑也繼承 PlayerController 的判定溢出容錯，解決靠牆吸不到的問題
+        float catchRadius = player.GetEffectiveSweepRadius() * magnetRadiusMultiplier;
         float sqrCatchRadius = catchRadius * catchRadius;
+
         SpatialGridManager.Instance.GetTrashAroundPosition(center, nearbyTrashBuffer);
 
         for (int i = 0; i < nearbyTrashBuffer.Count; i++)
@@ -217,10 +247,8 @@ public class SkillManager : MonoBehaviour
         int count = sweepCollider.Overlap(trashFilter, chargedSweepResults);
         if (chargedSweepRoot != null) chargedSweepRoot.gameObject.SetActive(false);
 
-        // [重點註釋] 根據當前模式切分邏輯，確保右鍵蓄力在不同技能下有對應的效果
         if (player.currentMode == BroomMode.Impact)
         {
-            // 原有邏輯：打飛敵人
             float curve = Mathf.Pow(t, chargedPowerExponent);
             float forceMul = Mathf.Lerp(minForceMultiplier, maxForceMultiplier, curve);
 
@@ -241,7 +269,6 @@ public class SkillManager : MonoBehaviour
         }
         else if (player.currentMode == BroomMode.Sticky)
         {
-            // [重點註釋] 磁鐵模式邏輯：強制將蓄力範圍內的垃圾納入吸附列隊，實現大範圍吸取
             Vector2 sweepCenter = player.GetSweepCenter();
 
             for (int i = 0; i < count; i++)
@@ -251,7 +278,6 @@ public class SkillManager : MonoBehaviour
 
                 if (col.TryGetComponent(out BaseTrash trash))
                 {
-                    // 排除無效、正在被黑洞吸、或已經在吸附名單中的垃圾
                     if (trash == null || trash.IsAbsorbing || capturedTrash.Contains(trash)) continue;
 
                     capturedTrash.Add(trash);
@@ -268,7 +294,8 @@ public class SkillManager : MonoBehaviour
         if (player != null && player.currentMode == BroomMode.Sticky)
         {
             Gizmos.color = Color.green;
-            float radius = player.sweepRadius * magnetRadiusMultiplier;
+            // 編輯器可視化同步支援新的容錯半徑
+            float radius = player.GetEffectiveSweepRadius() * magnetRadiusMultiplier;
             Gizmos.DrawWireSphere(player.GetSweepCenter(), radius);
         }
     }

@@ -8,6 +8,10 @@ public class BaseTrash : BasePoolItem, IAbsorbable
     [SerializeField] protected float rotationSpeed;
 
     [SerializeField] public TrashType trashType;
+
+    [Tooltip("垃圾的階級/大小。寵物需達到對應的 maxEatTier 才能吃下它")]
+    [SerializeField] public int trashTier = 1;
+
     [SerializeField] protected int scoreValue = 10;
 
     [Header("動畫曲線")]
@@ -26,7 +30,7 @@ public class BaseTrash : BasePoolItem, IAbsorbable
 
     [Header("碰撞檢測 (串珠節點法)")]
     [Tooltip("新增多個節點來拼湊出長條形。如果只有一個點，就是普通的圓形。")]
-    [SerializeField] private Vector2[] collisionNodes = { Vector2.zero }; // [重點註釋] 支援陣列
+    [SerializeField] private Vector2[] collisionNodes = { Vector2.zero };
     [SerializeField] private float collisionCheckRadius = 0.45f;
     [SerializeField] private float hitCooldown = 0.2f;
     [SerializeField] private float collisionDamping = 0.8f;
@@ -39,13 +43,14 @@ public class BaseTrash : BasePoolItem, IAbsorbable
     [Header("Sticky 模式專用")]
     [SerializeField] private float stickSmoothTime = 0.05f;
 
+    [HideInInspector] public bool isDynamicSpawned = false;
+
     public float AbsorbEffectDuration => absorbEffectDuration;
     public float RotationSpeed => rotationSpeed;
     public bool IsAbsorbing { get; private set; }
     public Vector2 CurrentVelocity => currentVelocity;
     public float Weight => weight;
     public float InvWeight => 1f / weight;
-
     public int ScoreValue => scoreValue;
 
     private bool _isRecentlyHit;
@@ -58,37 +63,79 @@ public class BaseTrash : BasePoolItem, IAbsorbable
 
     private readonly List<BaseTrash> _nearbyTrash = new List<BaseTrash>(32);
     private Collider2D[] _colliders;
+    private Transform _transform;
+    private bool _areCollidersEnabled = true;
     private const int MAX_SUB_STEPS = 8;
 
     public bool CanBeAbsorbed => !IsAbsorbing && !_isStuck;
 
+    protected virtual void Awake()
+    {
+        _transform = transform;
+        _colliders = GetComponentsInChildren<Collider2D>(true);
+    }
+
     public void OnAbsorbStart(BlackHoleObstacle blackHole)
     {
+        BeginAbsorb(true, blackHole);
+    }
+
+    public void OnEnterBlackHole()
+    {
+        BeginAbsorb(false, null);
+    }
+
+    private void BeginAbsorb(bool registerWithBlackHole, BlackHoleObstacle blackHole)
+    {
         if (IsAbsorbing) return;
+
         IsAbsorbing = true;
+        NotifyDynamicConsumption();
+
         WakeUp();
         currentVelocity = Vector2.zero;
         SetCollidersEnabled(false);
         TrashCounter.MarkCollected(this);
-        blackHole.RegisterTrash(this);
+
+        if (registerWithBlackHole && blackHole != null)
+        {
+            blackHole.RegisterTrash(this);
+        }
+    }
+
+    private void NotifyDynamicConsumption()
+    {
+        if (isDynamicSpawned && DynamicSpawnManager.Instance != null)
+        {
+            DynamicSpawnManager.Instance.OnDynamicTrashConsumed();
+            isDynamicSpawned = false;
+        }
     }
 
     protected virtual void FixedUpdate()
     {
         if (IsAbsorbing) return;
-        if (_isStuck) { currentVelocity = Vector2.zero; return; }
+        if (_isStuck)
+        {
+            currentVelocity = Vector2.zero;
+            return;
+        }
 
         if (_isRecentlyHit)
         {
             _hitCooldownTimer -= Time.fixedDeltaTime;
-            if (_hitCooldownTimer <= 0f) { _hitCooldownTimer = 0f; _isRecentlyHit = false; }
+            if (_hitCooldownTimer <= 0f)
+            {
+                _hitCooldownTimer = 0f;
+                _isRecentlyHit = false;
+            }
         }
 
         if (_isSleeping) return;
 
-        Vector2 localPos = transform.position;
+        Vector2 localPos = _transform.position;
         HandleMovement(ref localPos);
-        transform.position = localPos;
+        _transform.position = localPos;
 
         HandleSleepCheck();
     }
@@ -96,6 +143,7 @@ public class BaseTrash : BasePoolItem, IAbsorbable
     public void ApplyMagnetHold(Vector2 targetPosition, Vector2 hostVelocity)
     {
         if (IsAbsorbing) return;
+
         if (!_isStuck)
         {
             _isStuck = true;
@@ -105,19 +153,23 @@ public class BaseTrash : BasePoolItem, IAbsorbable
             SetCollidersEnabled(false);
         }
 
-        if (_colliders != null && _colliders.Length > 0 && _colliders[0].enabled) SetCollidersEnabled(false);
+        if (_colliders != null && _colliders.Length > 0 && _colliders[0] != null && _colliders[0].enabled)
+        {
+            SetCollidersEnabled(false);
+        }
 
-        Vector2 currentPos = transform.position;
+        Vector2 currentPos = _transform.position;
         float actualSmoothTime = (currentPos - targetPosition).sqrMagnitude > 1f ? stickSmoothTime * 0.5f : stickSmoothTime;
         Vector2 newPos = Vector2.SmoothDamp(currentPos, targetPosition, ref _stickVelocitySmooth, actualSmoothTime, Mathf.Infinity, Time.fixedDeltaTime);
 
         HandleBoundaryCheck(ref newPos);
-        transform.position = newPos;
+        _transform.position = newPos;
     }
 
     public void ReleaseMagnetHold()
     {
         if (!_isStuck) return;
+
         _isStuck = false;
         SetCollidersEnabled(true);
         currentVelocity = _stickVelocitySmooth;
@@ -141,13 +193,22 @@ public class BaseTrash : BasePoolItem, IAbsorbable
         while (remainingTime > 0.00001f && safetyLoopCount < MAX_SUB_STEPS)
         {
             safetyLoopCount++;
+
             float speed = currentVelocity.magnitude;
-            if (speed <= 0.0001f) { currentVelocity = Vector2.zero; break; }
+            if (speed <= 0.0001f)
+            {
+                currentVelocity = Vector2.zero;
+                break;
+            }
 
             float stepTime = remainingTime;
             float stepDist = speed * stepTime;
 
-            if (stepDist > maxStepDist) { stepTime = maxStepDist / speed; stepDist = maxStepDist; }
+            if (stepDist > maxStepDist)
+            {
+                stepTime = maxStepDist / speed;
+                stepDist = maxStepDist;
+            }
 
             Vector2 stepDelta = currentVelocity * stepTime;
             Vector2 targetPos = currentPos + stepDelta;
@@ -155,13 +216,16 @@ public class BaseTrash : BasePoolItem, IAbsorbable
 
             bool hasCollision = CheckPathCollision(currentPos, targetPos, ref moveDist, out BaseTrash hitTrash);
 
-            if (moveDist > 0f) { currentPos += (stepDelta / stepDist) * moveDist; }
+            if (moveDist > 0f)
+            {
+                currentPos += (stepDelta / stepDist) * moveDist;
+            }
 
             if (hasCollision && hitTrash != null && !hitTrash._isRecentlyHit)
             {
                 if (!hitTrash._isStuck)
                 {
-                    Vector2 otherPos = hitTrash.transform.position;
+                    Vector2 otherPos = hitTrash._transform.position;
                     Vector2 hitDir = otherPos - currentPos;
                     if (hitDir.sqrMagnitude < 0.0001f) hitDir = Random.insideUnitCircle;
                     hitDir.Normalize();
@@ -180,22 +244,32 @@ public class BaseTrash : BasePoolItem, IAbsorbable
 
             HandleBoundaryCheck(ref currentPos);
 
-            float t = Mathf.Clamp01((deceleration * stepTime) * InvWeight);
-            currentVelocity = Vector2.Lerp(currentVelocity, Vector2.zero, t);
+            currentVelocity = Vector2.Lerp(currentVelocity, Vector2.zero, GetVelocityDamping(stepTime));
             remainingTime -= stepTime;
         }
-
-        if (safetyLoopCount >= MAX_SUB_STEPS) remainingTime = 0f;
 
         ResolveOverlap(ref currentPos);
         HandleBoundaryCheck(ref currentPos);
     }
 
-    // [重點註釋] 升級為雙重迴圈檢測：我們的所有節點 vs 別人的所有節點
+    private float GetVelocityDamping(float deltaTime)
+    {
+        float effectiveWeight = Mathf.Max(weight, 0.01f);
+
+        // [重點註釋] 輕物件保留更多慣性、重物件更快收束，避免輕垃圾出現突兀的瞬停感。
+        float drag = Mathf.Max(0f, deceleration) * Mathf.Sqrt(effectiveWeight);
+        if (drag <= 0f) return 0f;
+
+        return 1f - Mathf.Exp(-drag * deltaTime);
+    }
+
     private bool CheckPathCollision(Vector2 start, Vector2 end, ref float moveDist, out BaseTrash hitTrash)
     {
         hitTrash = null;
         if (collisionNodes == null || collisionNodes.Length == 0) return false;
+
+        SpatialGridManager grid = SpatialGridManager.Instance;
+        if (grid == null) return false;
 
         float r1 = collisionCheckRadius;
         Vector2 dir = end - start;
@@ -210,7 +284,7 @@ public class BaseTrash : BasePoolItem, IAbsorbable
         for (int myNodeIdx = 0; myNodeIdx < collisionNodes.Length; myNodeIdx++)
         {
             Vector2 startCenter = start + collisionNodes[myNodeIdx];
-            SpatialGridManager.Instance.GetTrashAroundPosition(startCenter, _nearbyTrash);
+            grid.GetTrashAroundPosition(startCenter, _nearbyTrash);
 
             for (int i = 0; i < _nearbyTrash.Count; i++)
             {
@@ -223,11 +297,12 @@ public class BaseTrash : BasePoolItem, IAbsorbable
 
                 for (int theirNodeIdx = 0; theirNodeIdx < trash.collisionNodes.Length; theirNodeIdx++)
                 {
-                    Vector2 theirCenter = (Vector2)trash.transform.position + trash.collisionNodes[theirNodeIdx];
+                    Vector2 theirCenter = (Vector2)trash._transform.position + trash.collisionNodes[theirNodeIdx];
                     Vector2 toTrash = theirCenter - startCenter;
                     float proj = Vector2.Dot(toTrash, dir);
 
                     if (proj < 0f || proj > maxTravel + combined) continue;
+
                     float sqLine = toTrash.sqrMagnitude - proj * proj;
                     if (sqLine > combined * combined) continue;
 
@@ -249,6 +324,7 @@ public class BaseTrash : BasePoolItem, IAbsorbable
             moveDist = Mathf.Max(0f, bestDist);
             return true;
         }
+
         return false;
     }
 
@@ -272,17 +348,19 @@ public class BaseTrash : BasePoolItem, IAbsorbable
         other.currentVelocity += impulse * other.InvWeight;
     }
 
-    // [重點註釋] 雙重迴圈推擠處理
     private void ResolveOverlap(ref Vector2 pos)
     {
         if (_isStuck || collisionNodes == null || collisionNodes.Length == 0) return;
+
+        SpatialGridManager grid = SpatialGridManager.Instance;
+        if (grid == null) return;
 
         float r1 = collisionCheckRadius;
 
         for (int myNodeIdx = 0; myNodeIdx < collisionNodes.Length; myNodeIdx++)
         {
             Vector2 myCenter = pos + collisionNodes[myNodeIdx];
-            SpatialGridManager.Instance.GetTrashAroundPosition(myCenter, _nearbyTrash);
+            grid.GetTrashAroundPosition(myCenter, _nearbyTrash);
 
             if (_nearbyTrash.Count == 0) continue;
 
@@ -294,10 +372,11 @@ public class BaseTrash : BasePoolItem, IAbsorbable
 
                 float r2 = trash.collisionCheckRadius;
                 float minDist = r1 + r2;
+                float minDistSqr = minDist * minDist;
 
                 for (int theirNodeIdx = 0; theirNodeIdx < trash.collisionNodes.Length; theirNodeIdx++)
                 {
-                    Vector2 theirCenter = (Vector2)trash.transform.position + trash.collisionNodes[theirNodeIdx];
+                    Vector2 theirCenter = (Vector2)trash._transform.position + trash.collisionNodes[theirNodeIdx];
                     Vector2 delta = myCenter - theirCenter;
                     float sqr = delta.sqrMagnitude;
 
@@ -307,13 +386,13 @@ public class BaseTrash : BasePoolItem, IAbsorbable
                         sqr = delta.sqrMagnitude;
                     }
 
-                    if (sqr >= minDist * minDist) continue;
+                    if (sqr >= minDistSqr) continue;
 
                     float dist = Mathf.Sqrt(sqr);
                     float penetration = minDist - dist;
 
                     pos += delta / dist * penetration;
-                    myCenter = pos + collisionNodes[myNodeIdx]; // 同步更新自身節點位置以防連續推擠失真
+                    myCenter = pos + collisionNodes[myNodeIdx];
                 }
             }
         }
@@ -335,13 +414,13 @@ public class BaseTrash : BasePoolItem, IAbsorbable
         StartHitCooldownTimer();
 
         Vector2 dir = hitDirection.sqrMagnitude > 0.0001f ? hitDirection.normalized : Vector2.right;
+        PlayerController controller = PlayerController.instance;
 
-        if (PlayerController.instance != null)
+        if (controller != null)
         {
-            // 打擊特效基於陣列的第一個節點（通常設為視覺重心）
             Vector2 primaryNode = collisionNodes != null && collisionNodes.Length > 0 ? collisionNodes[0] : Vector2.zero;
-            Vector2 hitPoint = ((Vector2)transform.position + primaryNode) - dir * collisionCheckRadius;
-            PlayerController.instance.EmitTrashHit(hitPoint, -dir, trashType);
+            Vector2 hitPoint = ((Vector2)_transform.position + primaryNode) - dir * collisionCheckRadius;
+            controller.EmitTrashHit(hitPoint, -dir, trashType);
         }
 
         Vector2 impulse = dir * (broomForce * power);
@@ -351,10 +430,13 @@ public class BaseTrash : BasePoolItem, IAbsorbable
     public void ApplyTrashHit(Vector2 hitDirection, float strength01)
     {
         if (IsAbsorbing || _isStuck) return;
+
         WakeUp();
         StartHitCooldownTimer();
+
         Vector2 dir = hitDirection.sqrMagnitude > 0.0001f ? hitDirection.normalized : Vector2.right;
         float impulseMag = trashForce * Mathf.Clamp01(strength01);
+
         ApplyImpulse(dir * impulseMag);
         currentVelocity *= collisionDamping;
     }
@@ -365,17 +447,30 @@ public class BaseTrash : BasePoolItem, IAbsorbable
         if (speed < sleepSpeedThreshold && speed > 0f)
         {
             _sleepTimer += Time.fixedDeltaTime;
-            if (_sleepTimer >= sleepTime) { currentVelocity = Vector2.zero; _isSleeping = true; }
+            if (_sleepTimer >= sleepTime)
+            {
+                currentVelocity = Vector2.zero;
+                _isSleeping = true;
+            }
         }
-        else { _sleepTimer = 0f; }
+        else
+        {
+            _sleepTimer = 0f;
+        }
     }
 
-    private void WakeUp() { _isSleeping = false; _sleepTimer = 0f; }
+    private void WakeUp()
+    {
+        _isSleeping = false;
+        _sleepTimer = 0f;
+    }
 
     private void HandleBoundaryCheck(ref Vector2 pos)
     {
         if (WorldBounds2D.Instance == null) return;
-        WorldBounds2D.Instance.Bounce(ref pos, ref currentVelocity, viewportPadding);
+
+        // [重點註釋] 邊界反彈仍交給統一的世界邊界系統，避免各物件各自算邊界造成手感不一致。
+        WorldBounds2D.Instance.Bounce(ref pos, ref currentVelocity, viewportPadding, collisionDamping);
     }
 
     private void StartHitCooldownTimer()
@@ -384,22 +479,15 @@ public class BaseTrash : BasePoolItem, IAbsorbable
         _hitCooldownTimer = hitCooldown;
     }
 
-    public void OnEnterBlackHole()
-    {
-        if (IsAbsorbing) return;
-        IsAbsorbing = true;
-        WakeUp();
-        currentVelocity = Vector2.zero;
-        SetCollidersEnabled(false);
-        TrashCounter.MarkCollected(this);
-    }
-
     public override void ResetState()
     {
         base.ResetState();
         currentVelocity = Vector2.zero;
         IsAbsorbing = false;
-        transform.localScale = initialScale;
+
+        isDynamicSpawned = false;
+
+        _transform.localScale = initialScale;
         _isRecentlyHit = false;
         _hitCooldownTimer = 0f;
         _isStuck = false;
@@ -408,19 +496,19 @@ public class BaseTrash : BasePoolItem, IAbsorbable
         SetCollidersEnabled(true);
     }
 
-    private void EnsureColliders()
-    {
-        if (_colliders != null) return;
-        _colliders = GetComponentsInChildren<Collider2D>(true);
-    }
-
     private void SetCollidersEnabled(bool enabled)
     {
-        EnsureColliders();
+        if (_colliders == null) return;
+        if (_areCollidersEnabled == enabled) return;
+
+        _areCollidersEnabled = enabled;
+
         for (int i = 0; i < _colliders.Length; i++)
         {
             if (_colliders[i] != null && _colliders[i].enabled != enabled)
+            {
                 _colliders[i].enabled = enabled;
+            }
         }
     }
 
@@ -430,7 +518,6 @@ public class BaseTrash : BasePoolItem, IAbsorbable
         Gizmos.color = _isStuck ? Color.green : Color.yellow;
         if (collisionNodes == null || collisionNodes.Length == 0) return;
 
-        // 畫出所有的碰撞節點
         foreach (var node in collisionNodes)
         {
             Gizmos.DrawWireSphere((Vector2)transform.position + node, collisionCheckRadius);

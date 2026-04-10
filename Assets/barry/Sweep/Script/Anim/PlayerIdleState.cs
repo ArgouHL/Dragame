@@ -17,7 +17,7 @@ public class PlayerIdleState : PlayerState
      public override void Update()
     {
         base.Update();
-        Debug.Log("Idle State Update");
+        
         Vector2 vel = PlayerController.instance.rb.linearVelocity;
         if (vel.magnitude > 0.1f)
         {
