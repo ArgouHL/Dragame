@@ -142,7 +142,6 @@ MonoBehaviour:
     m_RotationOrder: 4
   playerAbsorbTime: 0.5
   playerVanishTime: 0.5
-  playerEjectDuration: 0.5
   playerEjectSpeed: 15
   playerRotateSpeed: 1
   audioEmitter: {fileID: 5671448605266119251}
@@ -177,7 +176,7 @@ MonoBehaviour:
   vomitForce: 5
   eatingPauseDuration: 1
   levelConfigs:
-  - requiredTotalTrash: 5
+  - requiredTotalTrash: 12
     scaleMultiplier: 1
     maxEatTier: 1
   - requiredTotalTrash: 12
@@ -188,7 +187,7 @@ MonoBehaviour:
     maxEatTier: 3
   - requiredTotalTrash: 35
     scaleMultiplier: 2.2
-    maxEatTier: 0
+    maxEatTier: 4
   currentState: 0
   currentLevel: 0
   totalEaten: 0

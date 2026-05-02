@@ -1492,6 +1492,32 @@ MonoBehaviour:
   endPanel: {fileID: 7300581544886141775}
   endScoreText: {fileID: 1470276143}
   endToStartButton: {fileID: 1428752316}
+  endGradeImage: {fileID: 0}
+  gradeSettings:
+  - minScore: 0
+    gradeSprite: {fileID: 0}
+  - minScore: 0
+    gradeSprite: {fileID: 0}
+  - minScore: 0
+    gradeSprite: {fileID: 0}
+  - minScore: 0
+    gradeSprite: {fileID: 0}
+  - minScore: 0
+    gradeSprite: {fileID: 0}
+  - minScore: 0
+    gradeSprite: {fileID: 0}
+  - minScore: 0
+    gradeSprite: {fileID: 0}
+  - minScore: 0
+    gradeSprite: {fileID: 0}
+  - minScore: 0
+    gradeSprite: {fileID: 0}
+  - minScore: 0
+    gradeSprite: {fileID: 0}
+  - minScore: 0
+    gradeSprite: {fileID: 0}
+  - minScore: 0
+    gradeSprite: {fileID: 0}
   pauseAction:
     m_Name: Pause
     m_Type: 0
@@ -7128,7 +7154,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!222 &7300932667831343247
 CanvasRenderer:
   m_ObjectHideFlags: 0

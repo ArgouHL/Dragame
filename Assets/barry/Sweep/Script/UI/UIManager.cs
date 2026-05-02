@@ -8,20 +8,24 @@ using System.Collections;
 
 public class UIManager : MonoBehaviour
 {
-    [Header("=== 調試設置 (Debug) ===")]
+    // [重點註釋] 序列化結構體，允許在面板動態調整評級階層與分數門檻，徹底解耦資料與邏輯
+    [System.Serializable]
+    public struct GradeThreshold
+    {
+        [Tooltip("達到此評級所需的最低分數")]
+        public int minScore;
+        public Sprite gradeSprite;
+    }
+
+    [Header("=== 調試設置 ===")]
     [SerializeField, Tooltip("開啟以在 Console 追蹤 UI 與遊戲狀態切換")]
     private bool showDebugLogs = true;
 
     [Header("=== 分數 UI ===")]
     [SerializeField] private TMP_Text scoreText;
-
-    [Header("=== 分數動態視覺 (Juice) ===")]
-    [SerializeField, Tooltip("加分時放大的最大倍率")]
-    private float punchScaleMultiplier = 1.5f;
-    [SerializeField, Tooltip("動效演出時間(秒)")]
-    private float punchDuration = 0.2f;
-    [SerializeField, Tooltip("加分瞬間的高亮顏色")]
-    private Color punchColor = new Color(1f, 0.8f, 0f, 1f);
+    [SerializeField, Tooltip("加分時放大的最大倍率")] private float punchScaleMultiplier = 1.5f;
+    [SerializeField, Tooltip("動效演出時間(秒)")] private float punchDuration = 0.2f;
+    [SerializeField, Tooltip("加分瞬間的高亮顏色")] private Color punchColor = new Color(1f, 0.8f, 0f, 1f);
 
     [Header("=== 垃圾計數 UI ===")]
     [SerializeField] private TMP_Text trashCounterText;
@@ -38,13 +42,11 @@ public class UIManager : MonoBehaviour
     [Header("=== 右鍵技能 UI ===")]
     [SerializeField] private Image rightSkillIcon;
     [SerializeField] private TMP_Text rightSkillCooldownText;
-    [SerializeField, Tooltip("冷卻時的圖標顏色(模擬黑白/暗化)")]
-    private Color onCooldownColor = new Color(0.3f, 0.3f, 0.3f, 1f);
+    [SerializeField, Tooltip("冷卻時的圖標顏色")] private Color onCooldownColor = new Color(0.3f, 0.3f, 0.3f, 1f);
 
     [Header("=== 黑洞等級 UI ===")]
     [SerializeField] private Image blackHoleLevelIcon;
-    [SerializeField, Tooltip("請依序放入LV1~LV5的圖片 (Index 0 = LV1)")]
-    private Sprite[] levelSprites;
+    [SerializeField, Tooltip("依序放入LV1~LV5的圖片")] private Sprite[] levelSprites;
 
     [Header("=== 暫停選單 UI ===")]
     [SerializeField] private GameObject pausePanel;
@@ -56,8 +58,13 @@ public class UIManager : MonoBehaviour
 
     [Header("=== 結束 UI ===")]
     [SerializeField] private GameObject endPanel;
-    [SerializeField] private TMP_Text endScoreText; // 新增這行來綁定結算分數文字
+    [SerializeField] private TMP_Text endScoreText;
     [SerializeField] private Button endToStartButton;
+
+    [Header("=== 結算評級 UI ===")]
+    [SerializeField] private Image endGradeImage;
+    [SerializeField, Tooltip("請嚴格依照分數『由高到低』排列設定，程式將採首次命中判定")]
+    private GradeThreshold[] gradeSettings;
 
     [Header("=== 輸入綁定 ===")]
     [SerializeField] private InputAction pauseAction = new InputAction("Pause", binding: "<Keyboard>/escape");
@@ -68,18 +75,19 @@ public class UIManager : MonoBehaviour
     private bool isGameOver;
     private float remainingTime;
     private int lastDisplaySeconds = -1;
-
-    // 記錄當前總分與動效狀態
     private int currentScore;
+
     private Vector3 _originalScoreScale;
     private Color _originalScoreColor;
     private Coroutine _scorePunchRoutine;
+    private PlayerController _cachedPlayerController;
 
     private void Awake()
     {
         closeTeachAction = new InputAction("CloseTeach", InputActionType.Button);
         closeTeachAction.AddBinding("<Mouse>/leftButton");
         closeTeachAction.AddBinding("<Mouse>/rightButton");
+
         GraphicsSettings.transparencySortMode = TransparencySortMode.CustomAxis;
         GraphicsSettings.transparencySortAxis = new Vector3(0, 1, 0);
     }
@@ -87,16 +95,15 @@ public class UIManager : MonoBehaviour
     private void OnEnable()
     {
         TrashCounter.Changed += OnTrashCounterChanged;
-
         BlackHoleObstacle.OnTrashAbsorbedScore += AddScore;
         PetAI.OnVomitPenalty += AddScore;
         PetAI.OnPetLevelChanged += UpdateBlackHoleLevelUI;
 
-        if (continueButton != null) continueButton.onClick.AddListener(ResumeGame);
-        if (teachButton != null) teachButton.onClick.AddListener(OnTeachClicked);
-        if (pauseRestartButton != null) pauseRestartButton.onClick.AddListener(OnRestartGame);
-        if (pauseToStartButton != null) pauseToStartButton.onClick.AddListener(OnReturnToStartMenu);
-        if (endToStartButton != null) endToStartButton.onClick.AddListener(OnReturnToStartMenu);
+        continueButton?.onClick.AddListener(ResumeGame);
+        teachButton?.onClick.AddListener(OnTeachClicked);
+        pauseRestartButton?.onClick.AddListener(OnRestartGame);
+        pauseToStartButton?.onClick.AddListener(OnReturnToStartMenu);
+        endToStartButton?.onClick.AddListener(OnReturnToStartMenu);
 
         pauseAction.Enable();
         pauseAction.performed += OnPauseActionTriggered;
@@ -107,34 +114,29 @@ public class UIManager : MonoBehaviour
     private void OnDisable()
     {
         TrashCounter.Changed -= OnTrashCounterChanged;
-
         BlackHoleObstacle.OnTrashAbsorbedScore -= AddScore;
         PetAI.OnVomitPenalty -= AddScore;
         PetAI.OnPetLevelChanged -= UpdateBlackHoleLevelUI;
 
-        if (PlayerController.instance != null)
-        {
-            PlayerController.instance.OnModeChanged -= OnSkillModeChanged;
-            PlayerController.instance.OnRightSkillCooldownUpdate -= UpdateRightSkillCooldownUI;
-        }
-
-        if (continueButton != null) continueButton.onClick.RemoveListener(ResumeGame);
-        if (teachButton != null) teachButton.onClick.RemoveListener(OnTeachClicked);
-        if (pauseRestartButton != null) pauseRestartButton.onClick.RemoveListener(OnRestartGame);
-        if (pauseToStartButton != null) pauseToStartButton.onClick.RemoveListener(OnReturnToStartMenu);
-        if (endToStartButton != null) endToStartButton.onClick.RemoveListener(OnReturnToStartMenu);
+        continueButton?.onClick.RemoveListener(ResumeGame);
+        teachButton?.onClick.RemoveListener(OnTeachClicked);
+        pauseRestartButton?.onClick.RemoveListener(OnRestartGame);
+        pauseToStartButton?.onClick.RemoveListener(OnReturnToStartMenu);
+        endToStartButton?.onClick.RemoveListener(OnReturnToStartMenu);
 
         pauseAction.Disable();
         closeTeachAction.Disable();
     }
 
-    private void OnDestroy() => closeTeachAction?.Dispose();
-
     private void Start()
     {
-        Log("初始化 UI 系統，遊戲開始。");
-        isPaused = isTeaching = isGameOver = false;
+        Log("初始化 UI 系統，強制顯示開場說明。");
+
+        isGameOver = false;
+        isPaused = false;
+        isTeaching = true;
         remainingTime = gameDuration;
+        currentScore = 0;
 
         if (scoreText != null)
         {
@@ -142,31 +144,36 @@ public class UIManager : MonoBehaviour
             _originalScoreColor = scoreText.color;
         }
 
-        currentScore = 0;
         UpdateScoreText(false);
-
         pausePanel?.SetActive(false);
-        teachPanel?.SetActive(false);
         endPanel?.SetActive(false);
+
+        if (teachPanel != null)
+        {
+            teachPanel.SetActive(true);
+            teachPanel.transform.SetAsLastSibling();
+        }
 
         UpdateTimerText();
         RefreshTrash(TrashCounter.Collected, TrashCounter.Total);
 
-        if (PlayerController.instance != null)
+        _cachedPlayerController = PlayerController.instance;
+        if (_cachedPlayerController != null)
         {
-            PlayerController.instance.OnModeChanged += OnSkillModeChanged;
-            OnSkillModeChanged(PlayerController.instance.currentMode);
+            _cachedPlayerController.OnModeChanged += OnSkillModeChanged;
+            _cachedPlayerController.OnRightSkillCooldownUpdate += UpdateRightSkillCooldownUI;
 
-            // 訂閱冷卻事件並手動刷新一次初始狀態
-            PlayerController.instance.OnRightSkillCooldownUpdate += UpdateRightSkillCooldownUI;
+            OnSkillModeChanged(_cachedPlayerController.currentMode);
             UpdateRightSkillCooldownUI(0f, 1f);
         }
-        SetGameState(true);
+
+        SetGameState(false);
     }
 
     private void Update()
     {
-        if (isPaused || isGameOver) return;
+        if (isPaused || isTeaching || isGameOver) return;
+
         remainingTime -= Time.deltaTime;
         if (remainingTime <= 0f)
         {
@@ -186,23 +193,15 @@ public class UIManager : MonoBehaviour
 
     private void UpdateScoreText(bool playAnimation)
     {
-        if (scoreText != null)
-        {
-            scoreText.text = currentScore.ToString();
+        if (scoreText == null) return;
 
-            if (playAnimation)
-            {
-                TriggerScorePunchAnim();
-            }
-        }
+        scoreText.text = currentScore.ToString();
+        if (playAnimation) TriggerScorePunchAnim();
     }
 
     private void TriggerScorePunchAnim()
     {
-        if (_scorePunchRoutine != null)
-        {
-            StopCoroutine(_scorePunchRoutine);
-        }
+        if (_scorePunchRoutine != null) StopCoroutine(_scorePunchRoutine);
         _scorePunchRoutine = StartCoroutine(ScorePunchCoroutine());
     }
 
@@ -210,7 +209,6 @@ public class UIManager : MonoBehaviour
     {
         float halfDuration = punchDuration * 0.5f;
         float elapsed = 0f;
-
         Vector3 targetScale = _originalScoreScale * punchScaleMultiplier;
 
         while (elapsed < halfDuration)
@@ -252,7 +250,8 @@ public class UIManager : MonoBehaviour
     private void UpdateTimerText()
     {
         if (timerText == null) return;
-        int displaySeconds = Mathf.CeilToInt(Mathf.Max(0f, remainingTime));
+
+        int displaySeconds = Mathf.CeilToInt(remainingTime);
         if (displaySeconds == lastDisplaySeconds) return;
 
         lastDisplaySeconds = displaySeconds;
@@ -269,10 +268,11 @@ public class UIManager : MonoBehaviour
     private void SetImageAlpha(Image img, float alpha)
     {
         if (img == null) return;
-        var c = img.color; c.a = alpha; img.color = c;
+        var c = img.color;
+        c.a = alpha;
+        img.color = c;
     }
 
-    // [重點註釋] 接收冷卻廣播，更新圖標顏色與文字狀態
     private void UpdateRightSkillCooldownUI(float currentCooldown, float maxCooldown)
     {
         if (rightSkillIcon == null) return;
@@ -283,7 +283,6 @@ public class UIManager : MonoBehaviour
             if (rightSkillCooldownText != null)
             {
                 rightSkillCooldownText.gameObject.SetActive(true);
-                // 使用 CeilToInt，這樣 4.2 秒會顯示 5，0.1 秒會顯示 1，符合玩家直覺
                 rightSkillCooldownText.text = Mathf.CeilToInt(currentCooldown).ToString();
             }
         }
@@ -308,25 +307,35 @@ public class UIManager : MonoBehaviour
     private void OnPauseActionTriggered(InputAction.CallbackContext context)
     {
         if (isGameOver) return;
-        if (isTeaching) { CloseTeachPanel(); return; }
-        if (isPaused) ResumeGame(); else PauseGame();
+        if (isTeaching)
+        {
+            CloseTeachPanel();
+            return;
+        }
+        if (isPaused) ResumeGame();
+        else PauseGame();
     }
 
     private void PauseGame()
     {
         if (isGameOver) return;
-        Log("觸發暫停 (Pause)。");
+        Log("觸發暫停。");
         isPaused = true;
-        pausePanel?.SetActive(true);
-        pausePanel?.transform.SetAsLastSibling();
+
+        if (pausePanel != null)
+        {
+            pausePanel.SetActive(true);
+            pausePanel.transform.SetAsLastSibling();
+        }
         SetGameState(false);
     }
 
     private void ResumeGame()
     {
         if (isGameOver) return;
-        Log("解除暫停，遊戲繼續 (Resume)。");
+        Log("解除暫停，遊戲繼續。");
         isPaused = isTeaching = false;
+
         pausePanel?.SetActive(false);
         teachPanel?.SetActive(false);
         SetGameState(true);
@@ -338,6 +347,7 @@ public class UIManager : MonoBehaviour
         Log("開啟教學面板。");
         isTeaching = true;
         pausePanel?.SetActive(false);
+
         if (teachPanel != null)
         {
             teachPanel.SetActive(true);
@@ -348,13 +358,21 @@ public class UIManager : MonoBehaviour
     private void CloseTeachPanel()
     {
         if (isGameOver) return;
-        Log("關閉教學面板，返回暫停選單。");
+        Log("關閉教學面板。");
         isTeaching = false;
         teachPanel?.SetActive(false);
-        if (pausePanel != null)
+
+        if (isPaused)
         {
-            pausePanel.SetActive(true);
-            pausePanel.transform.SetAsLastSibling();
+            if (pausePanel != null)
+            {
+                pausePanel.SetActive(true);
+                pausePanel.transform.SetAsLastSibling();
+            }
+        }
+        else
+        {
+            ResumeGame();
         }
     }
 
@@ -366,16 +384,37 @@ public class UIManager : MonoBehaviour
     private void GameOver(string reason)
     {
         if (isGameOver) return;
-        Log($"遊戲結束 (GameOver)，原因: {reason}");
+        Log($"遊戲結束，原因: {reason}");
         isGameOver = true;
         isPaused = isTeaching = false;
+
         pausePanel?.SetActive(false);
         teachPanel?.SetActive(false);
 
-        // 新增這區塊：更新結算畫面的分數
-        if (endScoreText != null)
+        if (endScoreText != null) endScoreText.text = currentScore.ToString();
+
+        // [重點註釋] 執行評級結算判定，利用早期返回（Break）優化迴圈效能
+        if (endGradeImage != null && gradeSettings != null && gradeSettings.Length > 0)
         {
-            endScoreText.text = currentScore.ToString();
+            Sprite finalGrade = null;
+            for (int i = 0; i < gradeSettings.Length; i++)
+            {
+                if (currentScore >= gradeSettings[i].minScore)
+                {
+                    finalGrade = gradeSettings[i].gradeSprite;
+                    break;
+                }
+            }
+
+            if (finalGrade != null)
+            {
+                endGradeImage.sprite = finalGrade;
+                endGradeImage.gameObject.SetActive(true);
+            }
+            else
+            {
+                endGradeImage.gameObject.SetActive(false);
+            }
         }
 
         if (endPanel != null)
@@ -408,13 +447,21 @@ public class UIManager : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
     }
 
+    private void OnDestroy()
+    {
+        closeTeachAction?.Dispose();
+
+        if (_cachedPlayerController != null)
+        {
+            _cachedPlayerController.OnModeChanged -= OnSkillModeChanged;
+            _cachedPlayerController.OnRightSkillCooldownUpdate -= UpdateRightSkillCooldownUI;
+        }
+    }
+
     private void Log(string message)
     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        if (showDebugLogs)
-        {
-            Debug.Log($"[UIManager] {message}");
-        }
+        if (showDebugLogs) Debug.Log($"[UIManager] {message}");
 #endif
     }
 }

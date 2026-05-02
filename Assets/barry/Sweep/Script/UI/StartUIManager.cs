@@ -2,35 +2,35 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.Video;
+using System.Collections;
 
 public class StartUIManager : MonoBehaviour
 {
     [Header("=== 主選單 UI ===")]
     [SerializeField] private GameObject startPanel;
     [SerializeField] private Button startButton;
-    [SerializeField] private Button rankingButton;
-    [SerializeField] private Button pokedexButton;
+    [SerializeField] private Button teachButton;
     [SerializeField] private Button exitButton;
+
+    [Header("=== 說明面板 UI ===")]
+    [SerializeField] private GameObject teachPanel;
 
     [Header("=== 影片播放設定 ===")]
     [SerializeField] private VideoPlayer videoPlayer;
     [SerializeField] private GameObject videoPanel;
 
-    [Header("=== 可選跳轉場景名稱 ===")]
+    [Header("=== 場景名稱 ===")]
     [SerializeField] private string gameSceneName = "GameScene";
-    [SerializeField] private string rankingSceneName = "";
-    [SerializeField] private string pokedexSceneName = "";
 
     private bool isPlayingVideo = false;
+    private bool isShowingTeachFromMenu = false;
 
     private void OnEnable()
     {
         if (startButton != null) startButton.onClick.AddListener(OnStartGame);
-        if (rankingButton != null) rankingButton.onClick.AddListener(OnRankingClicked);
-        if (pokedexButton != null) pokedexButton.onClick.AddListener(OnPokedexClicked);
+        if (teachButton != null) teachButton.onClick.AddListener(OnTeachClicked);
         if (exitButton != null) exitButton.onClick.AddListener(OnExitGame);
 
-        // 註冊影片播放結束的事件
         if (videoPlayer != null)
         {
             videoPlayer.loopPointReached += OnVideoFinished;
@@ -40,11 +40,9 @@ public class StartUIManager : MonoBehaviour
     private void OnDisable()
     {
         if (startButton != null) startButton.onClick.RemoveListener(OnStartGame);
-        if (rankingButton != null) rankingButton.onClick.RemoveListener(OnRankingClicked);
-        if (pokedexButton != null) pokedexButton.onClick.RemoveListener(OnPokedexClicked);
+        if (teachButton != null) teachButton.onClick.RemoveListener(OnTeachClicked);
         if (exitButton != null) exitButton.onClick.RemoveListener(OnExitGame);
 
-        // 取消註冊影片播放結束的事件
         if (videoPlayer != null)
         {
             videoPlayer.loopPointReached -= OnVideoFinished;
@@ -58,50 +56,43 @@ public class StartUIManager : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
 
         if (startPanel != null) startPanel.SetActive(true);
-        if (videoPanel != null) videoPanel.SetActive(false); // 確保遊戲開始時影片面板是隱藏的
+        if (videoPanel != null) videoPanel.SetActive(false);
+        if (teachPanel != null) teachPanel.SetActive(false);
     }
 
     private void Update()
     {
-        // 偵測是否正在播放影片，且玩家按下了滑鼠左鍵
         if (isPlayingVideo && Input.GetMouseButtonDown(0))
         {
             SkipVideo();
+        }
+        else if (isShowingTeachFromMenu && Input.GetMouseButtonDown(0))
+        {
+            CloseMenuTeachPanel();
         }
     }
 
     private void OnStartGame()
     {
-        Time.timeScale = 1f;
+        if (startPanel != null) startPanel.SetActive(false);
 
-        // 檢查是否有配置影片播放器
         if (videoPlayer != null && videoPanel != null)
         {
-            if (startPanel != null) startPanel.SetActive(false); // 隱藏主選單
-            videoPanel.SetActive(true); // 顯示影片畫布
+            videoPanel.SetActive(true);
             videoPlayer.Play();
             isPlayingVideo = true;
         }
         else
         {
-            // 如果沒有配置影片，直接載入遊戲場景
             LoadGameScene();
         }
     }
 
-    private void OnVideoFinished(VideoPlayer vp)
-    {
-        // 影片自然播放完畢後觸發
-        LoadGameScene();
-    }
+    private void OnVideoFinished(VideoPlayer vp) => LoadGameScene();
 
     private void SkipVideo()
     {
-        // 玩家點擊左鍵強制中斷影片
-        if (videoPlayer != null)
-        {
-            videoPlayer.Stop();
-        }
+        if (videoPlayer != null) videoPlayer.Stop();
         LoadGameScene();
     }
 
@@ -111,26 +102,27 @@ public class StartUIManager : MonoBehaviour
         SceneManager.LoadScene(gameSceneName);
     }
 
-    private void OnRankingClicked()
+    private void OnTeachClicked()
     {
-        if (string.IsNullOrWhiteSpace(rankingSceneName))
+        if (teachPanel != null)
         {
-            Debug.LogWarning("Ranking 按鈕已按下，但 rankingSceneName 尚未設定。");
-            return;
+            teachPanel.SetActive(true);
+            teachPanel.transform.SetAsLastSibling();
+            // 使用協程延遲一幀，避免點擊按鈕的當下立即觸發 Update 裡的關閉邏輯
+            StartCoroutine(EnableMenuTeachClosure());
         }
-
-        SceneManager.LoadScene(rankingSceneName);
     }
 
-    private void OnPokedexClicked()
+    private IEnumerator EnableMenuTeachClosure()
     {
-        if (string.IsNullOrWhiteSpace(pokedexSceneName))
-        {
-            Debug.LogWarning("Pokedex 按鈕已按下，但 pokedexSceneName 尚未設定。");
-            return;
-        }
+        yield return null;
+        isShowingTeachFromMenu = true;
+    }
 
-        SceneManager.LoadScene(pokedexSceneName);
+    private void CloseMenuTeachPanel()
+    {
+        isShowingTeachFromMenu = false;
+        if (teachPanel != null) teachPanel.SetActive(false);
     }
 
     private void OnExitGame()
