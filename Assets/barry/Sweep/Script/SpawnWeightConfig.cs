@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 [CreateAssetMenu(fileName = "SpawnWeightConfig", menuName = "Game/Config/Spawn Weight Config")]
 public class SpawnWeightConfig : ScriptableObject
@@ -6,14 +6,14 @@ public class SpawnWeightConfig : ScriptableObject
     [System.Serializable]
     public struct TierWeight
     {
-        [Tooltip("¨Ì§Ç¶ñ¤J T1 ¨ì T5 ªºÅv­«¡C°}¦Cªø«×¥²¶·¬° 5¡C")]
+        [Tooltip("ä¾åºå¡«å…¥ T1 åˆ° T5 çš„æ¬Šé‡ã€‚é™£åˆ—é•·åº¦å¿…é ˆç‚º 5ã€‚")]
         public int[] weights;
     }
 
-    [Tooltip("°}¦C¯Á¤Ş 0 ¥Nªí LV1¡A¨Ì§Ç¹ïÀ³¨ìº¡¯Å°t¸m¡C")]
+    [Tooltip("é™£åˆ—ç´¢å¼• 0 ä»£è¡¨ LV1ï¼Œä¾åºå°æ‡‰åˆ°æ»¿ç´šé…ç½®ã€‚")]
     public TierWeight[] levelWeights;
 
-    // [­«ÂIµùÄÀ] ½ü½L½äºâªk¡]Roulette Wheel Selection¡^¡C§Q¥Î¹w¥ı°t¸mªºÅv­«°}¦C¶i¦æ O(N) ÀË¯Á¡C¦] N «í¬° 5¡AµL¶·¹ê§@½ÆÂøªº¤G¤À·j´M¥HÁ×§K¹L«×¤uµ{¡C
+    // [é‡é»è¨»é‡‹] è¼ªç›¤è³­ç®—æ³•ï¼ˆRoulette Wheel Selectionï¼‰ã€‚åˆ©ç”¨é å…ˆé…ç½®çš„æ¬Šé‡é™£åˆ—é€²è¡Œ O(N) æª¢ç´¢ã€‚å›  N æ†ç‚º 5ï¼Œç„¡é ˆå¯¦ä½œè¤‡é›œçš„äºŒåˆ†æœå°‹ä»¥é¿å…éåº¦å·¥ç¨‹ã€‚
     public int GetRandomTier(int currentLevel)
     {
         if (levelWeights == null || levelWeights.Length == 0) return 1;
@@ -23,7 +23,7 @@ public class SpawnWeightConfig : ScriptableObject
 
         if (weights == null || weights.Length != 5)
         {
-            Debug.LogError("[SpawnWeightConfig] Åv­«°}¦C³]©w¿ù»~¡Aªø«×¥²¶·¬° 5¡C");
+            Debug.LogError("[SpawnWeightConfig] æ¬Šé‡é™£åˆ—è¨­å®šéŒ¯èª¤ï¼Œé•·åº¦å¿…é ˆç‚º 5ã€‚");
             return 1;
         }
 

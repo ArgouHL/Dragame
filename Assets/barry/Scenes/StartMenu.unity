@@ -281,6 +281,10 @@ MonoBehaviour:
   teachButton: {fileID: 1208685858}
   exitButton: {fileID: 1670766381118687464}
   teachPanel: {fileID: 1378750797}
+  teachImageDisplay: {fileID: 5452801690856217210}
+  teachSprites:
+  - {fileID: 21300000, guid: 6bbff6e3c732d7e4a94bdb008583361e, type: 3}
+  - {fileID: 21300000, guid: 3717013c80ec75c49b734d45b54e3e8f, type: 3}
   videoPlayer: {fileID: 610916063}
   videoPanel: {fileID: 1418423405}
   gameSceneName: Sweep
@@ -342,7 +346,7 @@ VideoPlayer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 610916062}
   m_Enabled: 1
-  m_VideoClip: {fileID: 32900000, guid: 606bd44779d7de040817fad53fd38c72, type: 3}
+  m_VideoClip: {fileID: 32900000, guid: ded4cd5d1ba711645bd65eb38a699cab, type: 3}
   m_TargetCameraAlpha: 1
   m_TargetCamera3DLayout: 0
   m_TargetCamera: {fileID: 0}

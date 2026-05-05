@@ -31,7 +31,10 @@ public class LevelSpawner : MonoBehaviour
     [SerializeField] private List<TrashSpawnData> startOutViewTrash = new List<TrashSpawnData>();
 
     [Header("生成安全參數")]
-    [SerializeField] public float minSafeDistance = 0.5f;
+    [SerializeField, Tooltip("物體與物體之間的最短安全距離")]
+    public float minSafeDistance = 0.5f;
+    [SerializeField, Tooltip("物體與空氣牆(世界邊界)的最短安全距離")]
+    public float wallSafeDistance = 1.5f;
     [SerializeField] private int maxSpawnAttempts = 15;
     [SerializeField] private Transform trashParent;
     [SerializeField] private Transform obstacleParent;
@@ -121,15 +124,25 @@ public class LevelSpawner : MonoBehaviour
     private Vector3 GetRandomPosOutView()
     {
         if (WorldBounds2D.Instance == null) return GetRandomPosInView();
+
         Rect world = WorldBounds2D.Instance.GetWorldRect();
         Rect view = GetCameraWorldRect();
         Rect exclude = new Rect(view.x - 1f, view.y - 1f, view.width + 2f, view.height + 2f);
+
+        // 直接在安全邊界內取隨機值，避免 ClampToWorld 造成物體大量堆積在空氣牆邊緣
+        float safeXMin = world.xMin + wallSafeDistance;
+        float safeXMax = world.xMax - wallSafeDistance;
+        float safeYMin = world.yMin + wallSafeDistance;
+        float safeYMax = world.yMax - wallSafeDistance;
+
         for (int i = 0; i < 10; i++)
         {
-            Vector3 p = new Vector3(Random.Range(world.xMin, world.xMax), Random.Range(world.yMin, world.yMax), 0f);
-            if (!exclude.Contains(p)) return ClampToWorld(p);
+            Vector3 p = new Vector3(Random.Range(safeXMin, safeXMax), Random.Range(safeYMin, safeYMax), 0f);
+            if (!exclude.Contains(p)) return p; // 已經在安全範圍內，直接回傳
         }
-        return ClampToWorld(new Vector3(Random.Range(world.xMin, world.xMax), Random.Range(world.yMin, world.yMax), 0f));
+
+        // 嘗試 10 次都失敗的保底輸出
+        return new Vector3(Random.Range(safeXMin, safeXMax), Random.Range(safeYMin, safeYMax), 0f);
     }
 
     private Rect GetCameraWorldRect()
@@ -148,9 +161,10 @@ public class LevelSpawner : MonoBehaviour
     {
         if (WorldBounds2D.Instance == null) return p;
         Rect r = WorldBounds2D.Instance.GetWorldRect();
-        float pad = 0.5f;
-        p.x = Mathf.Clamp(p.x, r.xMin + pad, r.xMax - pad);
-        p.y = Mathf.Clamp(p.y, r.yMin + pad, r.yMax - pad);
+
+        // 使用 Inspector 設置的安全距離取代原先寫死的 0.5f
+        p.x = Mathf.Clamp(p.x, r.xMin + wallSafeDistance, r.xMax - wallSafeDistance);
+        p.y = Mathf.Clamp(p.y, r.yMin + wallSafeDistance, r.yMax - wallSafeDistance);
         return p;
     }
 
@@ -164,7 +178,7 @@ public class LevelSpawner : MonoBehaviour
             if (Vector3.SqrMagnitude(p - _permanentOccupiedPos[i]) < d2) return false;
         }
 
-        // Live check active trash (enables respawn in cleared areas - fixes permanent occupation bug)
+        // Live check active trash
         if (TrashPool.Instance != null && TrashPool.Instance.ActiveTrashList != null)
         {
             var list = TrashPool.Instance.ActiveTrashList;

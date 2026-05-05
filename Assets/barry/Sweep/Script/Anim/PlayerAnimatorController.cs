@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class PlayerAnimatorController : MonoBehaviour
 {
@@ -11,8 +11,8 @@ public class PlayerAnimatorController : MonoBehaviour
     public PlayerMoveState moveState { get; private set; }
 
     
-    public PowerState powerState { get; private set; }     // »W¤O
-    public ReleaseState releaseState { get; private set; } // ÄÀ©ñ
+    public PowerState powerState { get; private set; }     // è“„åŠ›
+    public ReleaseState releaseState { get; private set; } // é‡‹æ”¾
 
     private void Awake()
     {

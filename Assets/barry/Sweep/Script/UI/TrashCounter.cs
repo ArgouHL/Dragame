@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,7 +7,7 @@ public static class TrashCounter
     public static int Total { get; private set; }
     public static int Collected { get; private set; }
 
-    // [Why] §ï¥Î HashSet<BaseTrash> ª½±µ°O¿ıª«¥ó°Ñ¦Ò¡A¹ı©³Á×¶} EntityId Âà«¬ªº¹L®ÉÄµ§i¡A¥Bª«¥ó°Ñ¦Ò¤ñ¹ï®Ä¯à³Ì¨Î
+    // [Why] æ”¹ç”¨ HashSet<BaseTrash> ç›´æ¥è¨˜éŒ„ç‰©ä»¶åƒè€ƒï¼Œå¾¹åº•é¿é–‹ EntityId è½‰å‹çš„éæ™‚è­¦å‘Šï¼Œä¸”ç‰©ä»¶åƒè€ƒæ¯”å°æ•ˆèƒ½æœ€ä½³
     private static readonly HashSet<BaseTrash> _collectedTrashes = new HashSet<BaseTrash>();
 
     public static event Action<int, int> Changed;

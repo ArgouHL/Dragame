@@ -1,22 +1,22 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerEffectManager : MonoBehaviour
 {
-    [Header("=== ¯S®Ä²Õ¥ó¤Ş¥Î ===")]
+    [Header("=== ç‰¹æ•ˆçµ„ä»¶å¼•ç”¨ ===")]
     [SerializeField] private DragLine dragLine;
     [SerializeField] private DynamicSweepMesh chargedSweepMesh;
     [SerializeField] private float chargedSweepRotationOffset = -90f;
 
-    [Header("=== ²É¤l¨t²Î¦Cªí ===")]
+    [Header("=== ç²’å­ç³»çµ±åˆ—è¡¨ ===")]
     [SerializeField] private ParticleSystem[] particleSystems;
 
-    [Header("=== Trail (©ì§À) ³]©w ===")]
+    [Header("=== Trail (æ‹–å°¾) è¨­å®š ===")]
     [SerializeField] private float trailRateMax = 60f;
     [SerializeField] private float trailMinPowerToPlay = 0.01f;
 
-    [Header("=== Object Pool (ª«¥ó¦À) ³]©w ===")]
+    [Header("=== Object Pool (ç‰©ä»¶æ± ) è¨­å®š ===")]
     [SerializeField] private int poolSizeTrashHit = 12;
     [SerializeField] private int poolSizeWallHit = 12;
 
@@ -63,18 +63,18 @@ public class PlayerEffectManager : MonoBehaviour
         if (wallPrefab != null) _wallHitPool = new ParticlePool(wallPrefab, poolSizeWallHit, _fxRoot, "WallHitPool");
     }
 
-    // [­«ÂIµùÄÀ] µ¹ PlayerController ©I¥s¡A³B²z­éÂ÷¤÷ª«¥ó¾É­Pªº²É¤l¥¼©ñ¤j°İÃD
+    // [é‡é»è¨»é‡‹] çµ¦ PlayerController å‘¼å«ï¼Œè™•ç†å‰é›¢çˆ¶ç‰©ä»¶å°è‡´çš„ç²’å­æœªæ”¾å¤§å•é¡Œ
     public void ScaleEffects(float multiplier)
     {
         if (_fxRoot != null)
         {
-            // ±N¾ã­Ó¯S®Ä¦À®Ú¸`ÂI©ñ¤j¡A«OÃÒ©ì§À»P¼²À»¯S®ÄµøÄ±¤j¤p¦P¨B
+            // å°‡æ•´å€‹ç‰¹æ•ˆæ± æ ¹ç¯€é»æ”¾å¤§ï¼Œä¿è­‰æ‹–å°¾èˆ‡æ’æ“Šç‰¹æ•ˆè¦–è¦ºå¤§å°åŒæ­¥
             _fxRoot.localScale = Vector3.one * multiplier;
         }
 
         if (chargedSweepMesh != null)
         {
-            // ¦P¨B©ñ¤j®°§Îºô®æªº°òÂ¦µøÄ±
+            // åŒæ­¥æ”¾å¤§æ‰‡å½¢ç¶²æ ¼çš„åŸºç¤è¦–è¦º
             chargedSweepMesh.transform.localScale = Vector3.one * multiplier;
         }
     }

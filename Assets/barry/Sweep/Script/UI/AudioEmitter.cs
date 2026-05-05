@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using UnityEngine;
 
 [Serializable]
@@ -16,17 +16,17 @@ public class AudioEmitter : MonoBehaviour
         BGM
     }
 
-    [Header("³æ¤@­µ·½³]©w (¬Û®eÂÂ¦³ª«¥ó)")]
+    [Header("å–®ä¸€éŸ³æºè¨­å®š (ç›¸å®¹èˆŠæœ‰ç‰©ä»¶)")]
     [SerializeField] private AudioClip audioClip;
     [SerializeField] private AudioType audioType = AudioType.SFX;
 
-    [Header("¼½©ñ®É¾÷»PÄİ©Ê")]
-    [Tooltip("¤Ä¿ï«á¡A·íª«¥ó¸ü¤J©Î³õ´º¶}©l®É·|¦Û°Ê¼½©ñ")]
+    [Header("æ’­æ”¾æ™‚æ©Ÿèˆ‡å±¬æ€§")]
+    [Tooltip("å‹¾é¸å¾Œï¼Œç•¶ç‰©ä»¶è¼‰å…¥æˆ–å ´æ™¯é–‹å§‹æ™‚æœƒè‡ªå‹•æ’­æ”¾")]
     [SerializeField] private bool playOnStart = false;
-    [Tooltip("¹ï­I´º­µ¼Ö¦³®Ä¡A¨M©w¬O§_«ùÄò´`Àô¼½©ñ")]
+    [Tooltip("å°èƒŒæ™¯éŸ³æ¨‚æœ‰æ•ˆï¼Œæ±ºå®šæ˜¯å¦æŒçºŒå¾ªç’°æ’­æ”¾")]
     [SerializeField] private bool loop = true;
 
-    [Header("¦h­µ·½ÂX¥R®w (¨Ñª±®a½ÆÂø§Ş¯à¨Ï¥Î)")]
+    [Header("å¤šéŸ³æºæ“´å……åº« (ä¾›ç©å®¶è¤‡é›œæŠ€èƒ½ä½¿ç”¨)")]
     [SerializeField] private NamedAudioClip[] soundLibrary;
 
     private AudioSource localLoopSource;
@@ -62,8 +62,8 @@ public class AudioEmitter : MonoBehaviour
         }
         else
         {
-            // [­«ÂIµùÄÀ] ÄdºI¦r¦ê¿ù»~©Î¥¼«ü¬£­µÀÉªº­P©R¥¢»~¡A´£¨Ñ©ú½T±Æ¬d¤è¦V
-            Debug.LogWarning($"[AudioEmitter] µLªk¼½©ñ³æ¦¸­µ®Ä '{soundName}'¡C­ì¦]¡G¥¼¦b Sound Library ¤¤§ä¨ì¸Ó¦WºÙ¡A©Î¥¼«ü¬£ AudioClip¡C");
+            // [é‡é»è¨»é‡‹] æ””æˆªå­—ä¸²éŒ¯èª¤æˆ–æœªæŒ‡æ´¾éŸ³æª”çš„è‡´å‘½å¤±èª¤ï¼Œæä¾›æ˜ç¢ºæ’æŸ¥æ–¹å‘
+            Debug.LogWarning($"[AudioEmitter] ç„¡æ³•æ’­æ”¾å–®æ¬¡éŸ³æ•ˆ '{soundName}'ã€‚åŸå› ï¼šæœªåœ¨ Sound Library ä¸­æ‰¾åˆ°è©²åç¨±ï¼Œæˆ–æœªæŒ‡æ´¾ AudioClipã€‚");
         }
     }
 
@@ -72,8 +72,8 @@ public class AudioEmitter : MonoBehaviour
         AudioClip clip = GetClip(soundName);
         if (clip == null)
         {
-            // [­«ÂIµùÄÀ] ¦P¼ËÄdºI³sÄò­µ®Äªº¸ê·½¿ò¥¢°İÃD
-            Debug.LogWarning($"[AudioEmitter] µLªk¼½©ñ³sÄò­µ®Ä '{soundName}'¡C½ĞÀË¬d Sound Library ³]©w¡C");
+            // [é‡é»è¨»é‡‹] åŒæ¨£æ””æˆªé€£çºŒéŸ³æ•ˆçš„è³‡æºéºå¤±å•é¡Œ
+            Debug.LogWarning($"[AudioEmitter] ç„¡æ³•æ’­æ”¾é€£çºŒéŸ³æ•ˆ '{soundName}'ã€‚è«‹æª¢æŸ¥ Sound Library è¨­å®šã€‚");
             return;
         }
 

@@ -179,15 +179,20 @@ MonoBehaviour:
   - requiredTotalTrash: 12
     scaleMultiplier: 1
     maxEatTier: 1
+    animatorController: {fileID: 9100000, guid: dbb8a174cc33b5c4490ebe307810e2d9, type: 2}
   - requiredTotalTrash: 12
     scaleMultiplier: 1.4
     maxEatTier: 2
+    animatorController: {fileID: 9100000, guid: fb213742a52ba284597b4adfebc68802, type: 2}
   - requiredTotalTrash: 22
     scaleMultiplier: 1.8
     maxEatTier: 3
+    animatorController: {fileID: 9100000, guid: c4d115e7a9f74324cb6d7c8f6c569a0c, type: 2}
   - requiredTotalTrash: 35
     scaleMultiplier: 2.2
     maxEatTier: 4
+    animatorController: {fileID: 9100000, guid: 808912fd3b97e4947a0d33313e277224, type: 2}
+  petAnimator: {fileID: 8882046433364214306}
   currentState: 0
   currentLevel: 0
   totalEaten: 0
@@ -249,6 +254,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1998492646699218206}
   - component: {fileID: 5408054150003895564}
+  - component: {fileID: 8882046433364214306}
   m_Layer: 7
   m_Name: balckHole
   m_TagString: blackHole
@@ -321,7 +327,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 69d67f157fa873648965b3f15b1c0631, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 6425d35026edec74b85835b407c5c815, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -331,6 +337,28 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!95 &8882046433364214306
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2883701614384982133}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: dbb8a174cc33b5c4490ebe307810e2d9, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &6350944767739300763
 GameObject:
   m_ObjectHideFlags: 0

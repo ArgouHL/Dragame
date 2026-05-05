@@ -1,20 +1,20 @@
-using System.Collections;
+ï»¿using System.Collections;
 using UnityEngine;
 
 public class DynamicSpawnManager : MonoBehaviour
 {
     public static DynamicSpawnManager Instance { get; private set; }
 
-    [Header("°ÊºA¸Éµ¹°t¸m")]
+    [Header("å‹•æ…‹è£œçµ¦é…ç½®")]
     [SerializeField] private bool enableDynamicSpawn = true;
     [SerializeField] private int maxTrashOnField = 30;
     [SerializeField] private SpawnWeightConfig weightConfig;
 
-    [Header("¨Ì¿à¤Ş¥Î")]
+    [Header("ä¾è³´å¼•ç”¨")]
     [SerializeField] private LevelSpawner spawner;
     [SerializeField] private PetAI pet;
 
-    [Header("°£¿ù³]©w")]
+    [Header("é™¤éŒ¯è¨­å®š")]
     [SerializeField] private bool showDebugLog = true;
 
     private bool _isInitialized = false;
@@ -33,7 +33,7 @@ public class DynamicSpawnManager : MonoBehaviour
 
         if (spawner == null && !TryGetComponent(out spawner))
         {
-            Debug.LogError("[DynamicSpawnManager] ¯Ê¥¢ LevelSpawner ¨Ì¿à¡I", this);
+            Debug.LogError("[DynamicSpawnManager] ç¼ºå¤± LevelSpawner ä¾è³´ï¼", this);
             enabled = false;
         }
     }
@@ -42,11 +42,11 @@ public class DynamicSpawnManager : MonoBehaviour
     {
         if (spawner == null) yield break;
 
-        if (showDebugLog) Debug.Log("[DynamicSpawnManager] µ¥«İ LevelSpawner §G§½§¹¦¨...");
+        if (showDebugLog) Debug.Log("[DynamicSpawnManager] ç­‰å¾… LevelSpawner ä½ˆå±€å®Œæˆ...");
 
         while (!spawner.IsReady) yield return null;
 
-        // ­«ÂIÅŞ¿è¡G½T«O¦b LevelSpawner ¥Í¦¨§¹ Obstacle (Pet) «á¡A¤~¶i¦æ¸j©w
+        // é‡é»é‚è¼¯ï¼šç¢ºä¿åœ¨ LevelSpawner ç”Ÿæˆå®Œ Obstacle (Pet) å¾Œï¼Œæ‰é€²è¡Œç¶å®š
         if (pet == null)
         {
 #if UNITY_2021_3_18_OR_NEWER || UNITY_2022_2_OR_NEWER
@@ -58,7 +58,7 @@ public class DynamicSpawnManager : MonoBehaviour
 
         if (pet == null)
         {
-            Debug.LogError("[DynamicSpawnManager] LevelSpawner ¤w´Nºü¡A¦ı³õ¤W¨ÌµM§ä¤£¨ì PetAI¡I½Ğ½T»{ Obstacle ¬O§_¥¿½T±¾¸ü PetAI ¸}¥»¡C", this);
+            Debug.LogError("[DynamicSpawnManager] LevelSpawner å·²å°±ç·’ï¼Œä½†å ´ä¸Šä¾ç„¶æ‰¾ä¸åˆ° PetAIï¼è«‹ç¢ºèª Obstacle æ˜¯å¦æ­£ç¢ºæ›è¼‰ PetAI è…³æœ¬ã€‚", this);
             enabled = false;
             yield break;
         }
@@ -66,7 +66,7 @@ public class DynamicSpawnManager : MonoBehaviour
         _trashPool = TrashPool.Instance;
         _isInitialized = true;
 
-        if (showDebugLog) Debug.Log($"[DynamicSpawnManager] ¨Ì¿à¥ş¼Æ´Nºü¡C·Ç³Æ­º¦¸Ä²µo¥Í¦¨¡A·í«e¼Æ¶q: {_currentDynamicTrashCount}");
+        if (showDebugLog) Debug.Log($"[DynamicSpawnManager] ä¾è³´å…¨æ•¸å°±ç·’ã€‚æº–å‚™é¦–æ¬¡è§¸ç™¼ç”Ÿæˆï¼Œç•¶å‰æ•¸é‡: {_currentDynamicTrashCount}");
         TriggerRefill();
     }
 
@@ -75,7 +75,7 @@ public class DynamicSpawnManager : MonoBehaviour
         if (!enableDynamicSpawn || !_isInitialized) return;
 
         _currentDynamicTrashCount = Mathf.Max(0, _currentDynamicTrashCount - 1);
-        if (showDebugLog) Debug.Log($"[DynamicSpawnManager] °»´ú¨ì©U§£³Q®ø¯Ó¡C·í«e¼Æ¶q: {_currentDynamicTrashCount}/{maxTrashOnField}¡A·Ç³ÆÄ²µo¸É¥R¡C");
+        if (showDebugLog) Debug.Log($"[DynamicSpawnManager] åµæ¸¬åˆ°åƒåœ¾è¢«æ¶ˆè€—ã€‚ç•¶å‰æ•¸é‡: {_currentDynamicTrashCount}/{maxTrashOnField}ï¼Œæº–å‚™è§¸ç™¼è£œå……ã€‚");
 
         TriggerRefill();
     }
@@ -84,30 +84,30 @@ public class DynamicSpawnManager : MonoBehaviour
     {
         if (!enableDynamicSpawn || !_isInitialized)
         {
-            if (showDebugLog) Debug.LogWarning("[DynamicSpawnManager] Ä²µo¸É¥R¥¢±Ñ¡G¥¼±Ò¥Î°ÊºA¥Í¦¨©Î¥¼ªì©l¤Æ§¹¦¨¡C");
+            if (showDebugLog) Debug.LogWarning("[DynamicSpawnManager] è§¸ç™¼è£œå……å¤±æ•—ï¼šæœªå•Ÿç”¨å‹•æ…‹ç”Ÿæˆæˆ–æœªåˆå§‹åŒ–å®Œæˆã€‚");
             return;
         }
 
         if (_refillRoutine == null)
         {
-            if (showDebugLog) Debug.Log("[DynamicSpawnManager] ±Ò°Ê¸É¥R¨óµ{¡C");
+            if (showDebugLog) Debug.Log("[DynamicSpawnManager] å•Ÿå‹•è£œå……å”ç¨‹ã€‚");
             _refillRoutine = StartCoroutine(RefillCoroutine());
         }
         else
         {
-            if (showDebugLog) Debug.Log("[DynamicSpawnManager] ¸É¥R¨óµ{¤w¦b¹B¦æ¤¤¡A©¿²¤¥»¦¸Ä²µo¡C");
+            if (showDebugLog) Debug.Log("[DynamicSpawnManager] è£œå……å”ç¨‹å·²åœ¨é‹è¡Œä¸­ï¼Œå¿½ç•¥æœ¬æ¬¡è§¸ç™¼ã€‚");
         }
     }
 
     private IEnumerator RefillCoroutine()
     {
-        if (showDebugLog) Debug.Log($"[DynamicSpawnManager] ¶}©l°õ¦æ¸É¥R°j°é¡A¥Ø¼Ğ¼Æ¶q: {maxTrashOnField}");
+        if (showDebugLog) Debug.Log($"[DynamicSpawnManager] é–‹å§‹åŸ·è¡Œè£œå……è¿´åœˆï¼Œç›®æ¨™æ•¸é‡: {maxTrashOnField}");
 
         while (_currentDynamicTrashCount < maxTrashOnField)
         {
             if (weightConfig == null)
             {
-                Debug.LogError("[DynamicSpawnManager] ¯Ê¥¢ SpawnWeightConfig ¸j©w¡I", this);
+                Debug.LogError("[DynamicSpawnManager] ç¼ºå¤± SpawnWeightConfig ç¶å®šï¼", this);
                 break;
             }
 
@@ -116,7 +116,7 @@ public class DynamicSpawnManager : MonoBehaviour
 
             if (type == TrashType.None)
             {
-                if (showDebugLog) Debug.LogWarning($"[DynamicSpawnManager] Àò¨ú¤£¨ì¹ïÀ³¶¥¯Åªº TrashType (Tier: {targetTier})¡A¤¤Â_¸É¥R°j°é¡C");
+                if (showDebugLog) Debug.LogWarning($"[DynamicSpawnManager] ç²å–ä¸åˆ°å°æ‡‰éšç´šçš„ TrashType (Tier: {targetTier})ï¼Œä¸­æ–·è£œå……è¿´åœˆã€‚");
                 break;
             }
 
@@ -127,33 +127,33 @@ public class DynamicSpawnManager : MonoBehaviour
                 _currentDynamicTrashCount++;
                 spawner.RecalculateTotalTrash();
 
-                if (showDebugLog) Debug.Log($"[DynamicSpawnManager] ¦¨¥\¥Í¦¨°ÊºA©U§£¡CÃş«¬: {type}, ¶¥¯Å: {targetTier}¡C·í«eÁ`¼Æ: {_currentDynamicTrashCount}/{maxTrashOnField}");
+                if (showDebugLog) Debug.Log($"[DynamicSpawnManager] æˆåŠŸç”Ÿæˆå‹•æ…‹åƒåœ¾ã€‚é¡å‹: {type}, éšç´š: {targetTier}ã€‚ç•¶å‰ç¸½æ•¸: {_currentDynamicTrashCount}/{maxTrashOnField}");
             }
             else
             {
-                if (showDebugLog) Debug.LogWarning($"[DynamicSpawnManager] Spawner ¥Í¦¨¥¢±Ñ©Î¦^¶ÇªÅ­È (Ãş«¬: {type}, ¶¥¯Å: {targetTier})¡C");
+                if (showDebugLog) Debug.LogWarning($"[DynamicSpawnManager] Spawner ç”Ÿæˆå¤±æ•—æˆ–å›å‚³ç©ºå€¼ (é¡å‹: {type}, éšç´š: {targetTier})ã€‚");
             }
 
             yield return null;
         }
 
-        if (showDebugLog) Debug.Log($"[DynamicSpawnManager] ¸É¥R¨óµ{µ²§ô¡C³Ì²×¼Æ¶q: {_currentDynamicTrashCount}/{maxTrashOnField}");
+        if (showDebugLog) Debug.Log($"[DynamicSpawnManager] è£œå……å”ç¨‹çµæŸã€‚æœ€çµ‚æ•¸é‡: {_currentDynamicTrashCount}/{maxTrashOnField}");
         _refillRoutine = null;
     }
 
-    // --- ¥H¤U¬°°£¿ù¥Î¥kÁä¿ï³æ¥\¯à ---
+    // --- ä»¥ä¸‹ç‚ºé™¤éŒ¯ç”¨å³éµé¸å–®åŠŸèƒ½ ---
 
-    [ContextMenu("Debug: ±j¨îÄ²µo¸É¥R (Trigger Refill)")]
+    [ContextMenu("Debug: å¼·åˆ¶è§¸ç™¼è£œå…… (Trigger Refill)")]
     private void DebugForceRefill()
     {
-        if (showDebugLog) Debug.Log("[DynamicSpawnManager - Debug] ±q Inspector ±j¨îÄ²µo¸É¥R¡C");
+        if (showDebugLog) Debug.Log("[DynamicSpawnManager - Debug] å¾ Inspector å¼·åˆ¶è§¸ç™¼è£œå……ã€‚");
         TriggerRefill();
     }
 
-    [ContextMenu("Debug: ¼ÒÀÀ®ø¯Ó¤@­Ó©U§£ (Simulate Consume)")]
+    [ContextMenu("Debug: æ¨¡æ“¬æ¶ˆè€—ä¸€å€‹åƒåœ¾ (Simulate Consume)")]
     private void DebugSimulateConsume()
     {
-        if (showDebugLog) Debug.Log("[DynamicSpawnManager - Debug] ±q Inspector ¼ÒÀÀ®ø¯Ó©U§£¡C");
+        if (showDebugLog) Debug.Log("[DynamicSpawnManager - Debug] å¾ Inspector æ¨¡æ“¬æ¶ˆè€—åƒåœ¾ã€‚");
         OnDynamicTrashConsumed();
     }
 }

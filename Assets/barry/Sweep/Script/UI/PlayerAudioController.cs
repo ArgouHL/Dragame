@@ -1,8 +1,8 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System;
 using System.Collections.Generic;
 
-// ©w¸qµ²ºc¡AÅı§A¦b­±ªO¥i¥H¦Û¥Ñ³]©w¡u­ş­Ó§÷½è¡A¹ïÀ³­ş­Ó­µÀÉ¦WºÙ¡v
+// å®šç¾©çµæ§‹ï¼Œè®“ä½ åœ¨é¢æ¿å¯ä»¥è‡ªç”±è¨­å®šã€Œå“ªå€‹æè³ªï¼Œå°æ‡‰å“ªå€‹éŸ³æª”åç¨±ã€
 [Serializable]
 public struct TrashSoundMapping
 {
@@ -16,7 +16,7 @@ public class PlayerAudioController : MonoBehaviour
     private PlayerController player;
     private AudioEmitter emitter;
 
-    [Header("¹ïÀ³­µÀÉ¦WºÙ (»İ»P AudioEmitter ­±ªO³]©w§¹¥ş¤@­P)")]
+    [Header("å°æ‡‰éŸ³æª”åç¨± (éœ€èˆ‡ AudioEmitter é¢æ¿è¨­å®šå®Œå…¨ä¸€è‡´)")]
     public string switchSkillSound = "SwitchSkill";
     public string leftPressSound = "LeftPress";
     public string leftReleaseSound = "LeftRelease";
@@ -25,13 +25,13 @@ public class PlayerAudioController : MonoBehaviour
     public string wallHitSound = "WallHit";
     public string moveLoopSound = "Moving";
 
-    [Header("©U§£¥´À»³]©w (¤ä´©¦h§÷½è)")]
-    [Tooltip("±N¦UºØ©U§£§÷½è¹ïÀ³¨ì AudioEmitter ¸Ìªº¦WºÙ")]
+    [Header("åƒåœ¾æ‰“æ“Šè¨­å®š (æ”¯æ´å¤šæè³ª)")]
+    [Tooltip("å°‡å„ç¨®åƒåœ¾æè³ªå°æ‡‰åˆ° AudioEmitter è£¡çš„åç¨±")]
     public TrashSoundMapping[] trashHitMappings;
-    [Tooltip("¿W¥ß§÷½è¨¾³sµo¾÷¨î¡G¨Ò¦p 0.05 ¬í¤º¤£·|­«½Æ¼½©ñ¦P¤@­Ó¾TÅøÁn¡A¦ı¥i¥H¦P®É¼½©ñ¾TÅø¸ò¬Á¼şÁn")]
+    [Tooltip("ç¨ç«‹æè³ªé˜²é€£ç™¼æ©Ÿåˆ¶ï¼šä¾‹å¦‚ 0.05 ç§’å…§ä¸æœƒé‡è¤‡æ’­æ”¾åŒä¸€å€‹é‹ç½è²ï¼Œä½†å¯ä»¥åŒæ™‚æ’­æ”¾é‹ç½è·Ÿç»ç’ƒè²")]
     public float trashHitCooldown = 0.05f;
 
-    // §Q¥Î¦r¨åÀx¦s¡u¨C¤@ºØ§÷½è¡v¤W¦¸µo¥XÁn­µªº®É¶¡
+    // åˆ©ç”¨å­—å…¸å„²å­˜ã€Œæ¯ä¸€ç¨®æè³ªã€ä¸Šæ¬¡ç™¼å‡ºè²éŸ³çš„æ™‚é–“
     private Dictionary<TrashType, float> _hitCooldowns = new Dictionary<TrashType, float>();
 
     private void Awake()
@@ -50,7 +50,7 @@ public class PlayerAudioController : MonoBehaviour
         player.OnChargedSweepReleased += HandleChargeRelease;
         player.OnWallHitEvent += HandleWallHit;
 
-        // µù¥U±a¦³°Ñ¼Æªº©U§£À»¤¤¨Æ¥ó
+        // è¨»å†Šå¸¶æœ‰åƒæ•¸çš„åƒåœ¾æ“Šä¸­äº‹ä»¶
         player.OnTrashHitEvent += HandleTrashHit;
     }
 
@@ -120,7 +120,7 @@ public class PlayerAudioController : MonoBehaviour
         emitter.PlayOneShot(chargeShootSound);
     }
 
-    // [­«ÂIµùÄÀ] °ª¶¥§÷½è²V­µÅŞ¿è¡G³z¹L¦r¨å§ä¥X¸Ó§÷½è¤W¦¸¼½©ñªº®É¶¡¡A¶i¦æ¿W¥ß§N«o
+    // [é‡é»è¨»é‡‹] é«˜éšæè³ªæ··éŸ³é‚è¼¯ï¼šé€éå­—å…¸æ‰¾å‡ºè©²æè³ªä¸Šæ¬¡æ’­æ”¾çš„æ™‚é–“ï¼Œé€²è¡Œç¨ç«‹å†·å»
     private void HandleTrashHit(TrashType type)
     {
         if (!_hitCooldowns.ContainsKey(type))
@@ -140,7 +140,7 @@ public class PlayerAudioController : MonoBehaviour
         }
     }
 
-    // »²§U¨ç¦¡¡G±q³]©w¦nªº²M³æ¤¤´M§ä¹ïÀ³ªº¦r¦ê
+    // è¼”åŠ©å‡½å¼ï¼šå¾è¨­å®šå¥½çš„æ¸…å–®ä¸­å°‹æ‰¾å°æ‡‰çš„å­—ä¸²
     private string GetTrashSoundName(TrashType type)
     {
         for (int i = 0; i < trashHitMappings.Length; i++)

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+Ôªøusing System.Collections.Generic;
 using UnityEngine;
 
 public enum ObstacleType
@@ -16,7 +16,7 @@ public class ObstaclePool : BasePool<ObstacleType, BaseObstacle>
 
     protected virtual void Awake()
     {
-        // ≥]∏m Singleton
+        // Ë®≠ÁΩÆ Singleton
         if (Instance == null)
         {
             Instance = this;
@@ -27,7 +27,7 @@ public class ObstaclePool : BasePool<ObstacleType, BaseObstacle>
             return;
         }
 
-        // ™Ï©l§∆¶¿§l
+        // ÂàùÂßãÂåñÊ±†Â≠ê
         InitializePool(obstacleEntries);
     }
 

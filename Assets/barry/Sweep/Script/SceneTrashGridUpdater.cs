@@ -1,9 +1,9 @@
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using UnityEngine;
 
 public class SceneTrashGridUpdater : MonoBehaviour
 {
-    // ³o­Ó list ·|¦Û°Ê¥Ñ¤lª«¥ó¸Ìªº BaseTrash ¶ñº¡
+    // é€™å€‹ list æœƒè‡ªå‹•ç”±å­ç‰©ä»¶è£¡çš„ BaseTrash å¡«æ»¿
     private readonly List<BaseTrash> _trashList = new List<BaseTrash>();
 
     private void Awake()
@@ -11,7 +11,7 @@ public class SceneTrashGridUpdater : MonoBehaviour
         RefreshTrashList();
     }
 
-    // ¦pªG§A¤§«á¦b°õ¦æ¤¤¦³·s¼W / §R°£¤lª«¥ó¡A¥i¥H¦Û°Ê­«·s§ì¤@¦¸
+    // å¦‚æœä½ ä¹‹å¾Œåœ¨åŸ·è¡Œä¸­æœ‰æ–°å¢ / åˆªé™¤å­ç‰©ä»¶ï¼Œå¯ä»¥è‡ªå‹•é‡æ–°æŠ“ä¸€æ¬¡
     private void OnTransformChildrenChanged()
     {
         RefreshTrashList();
@@ -21,7 +21,7 @@ public class SceneTrashGridUpdater : MonoBehaviour
     {
         if (SpatialGridManager.Instance == null) return;
 
-        // §â¡uList¡v©³¤Uªº©U§£§ó·s¶iºô®æ
+        // æŠŠã€ŒListã€åº•ä¸‹çš„åƒåœ¾æ›´æ–°é€²ç¶²æ ¼
         SpatialGridManager.Instance.UpdateGrid(_trashList);
     }
 
@@ -29,13 +29,13 @@ public class SceneTrashGridUpdater : MonoBehaviour
     {
         _trashList.Clear();
 
-        // §â©Ò¦³¤lª«¥ó¤Wªº BaseTrash §ì¥X¨Ó
-        // ¨âºØ¼gªk¡A¬İ§A Unity ª©¥»¤ä´©­ş¤@­Ó
+        // æŠŠæ‰€æœ‰å­ç‰©ä»¶ä¸Šçš„ BaseTrash æŠ“å‡ºä¾†
+        // å…©ç¨®å¯«æ³•ï¼Œçœ‹ä½  Unity ç‰ˆæœ¬æ”¯æ´å“ªä¸€å€‹
 
-        // ¼gªk 1¡]¸û·sª©¥» Unity ¤ä´©¡^¡G
+        // å¯«æ³• 1ï¼ˆè¼ƒæ–°ç‰ˆæœ¬ Unity æ”¯æ´ï¼‰ï¼š
         // GetComponentsInChildren(true, _trashList);
 
-        // ¼gªk 2¡]¬Û®e©Ò¦³ª©¥»¡^¡G
+        // å¯«æ³• 2ï¼ˆç›¸å®¹æ‰€æœ‰ç‰ˆæœ¬ï¼‰ï¼š
         BaseTrash[] trashArray = GetComponentsInChildren<BaseTrash>(true);
         _trashList.AddRange(trashArray);
     }

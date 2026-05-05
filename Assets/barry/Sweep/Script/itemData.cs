@@ -1,8 +1,8 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 [CreateAssetMenu(fileName = "Type", menuName = "Scriptable Objects/Type")]
 public class ItemData: ScriptableObject
 {
-    public string typeName; // Ãş«¬¦WºÙ
-    public GameObject prefab; // ¹ïÀ³ªº¹w»sÅé
+    public string typeName; // é¡å‹åç¨±
+    public GameObject prefab; // å°æ‡‰çš„é è£½é«”
 }

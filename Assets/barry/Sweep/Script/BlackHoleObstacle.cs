@@ -6,32 +6,32 @@ public class BlackHoleObstacle : BaseObstacle
 {
     public static event System.Action<int> OnTrashAbsorbedScore;
 
-    [Header("¶Â¬}¯à¤O³]©w")]
+    [Header("é»‘æ´èƒ½åŠ›è¨­å®š")]
     [SerializeField] private float absorbRadius = 1f;
     [SerializeField] private Vector2 centerOffset;
-    [Tooltip("¦¹¶Â¬}¯à§]¾½ªº³Ì°ª©U§£¶¥¯Å (­Y¨­¤W¦³ PetAI¡A±N·|³Q PetAI ªºµ¥¯ÅÂĞ»\)")]
+    [Tooltip("æ­¤é»‘æ´èƒ½åå™¬çš„æœ€é«˜åƒåœ¾éšç´š (è‹¥èº«ä¸Šæœ‰ PetAIï¼Œå°‡æœƒè¢« PetAI çš„ç­‰ç´šè¦†è“‹)")]
     [SerializeField] private int maxAbsorbTier = 99;
 
-    [Header("©U§£§l¤J³]©w")]
+    [Header("åƒåœ¾å¸å…¥è¨­å®š")]
     [SerializeField] private float trashAbsorbTime = 1f;
     [SerializeField] private float trashRotateSpeed = 360f;
     [SerializeField] private AnimationCurve trashScaleCurve;
     [SerializeField] private AnimationCurve trashMoveCurve;
 
-    [Header("ª±®a§l¤J³]©w")]
+    [Header("ç©å®¶å¸å…¥è¨­å®š")]
     [SerializeField] private float playerAbsorbTime = 0.5f;
     [SerializeField] private float playerVanishTime = 0.5f;
-    // [¤w¼o±ó] playerEjectDuration ¤w²¾°£¡A¥æ¥Ñ PlayerController ³B²z
+    // [å·²å»¢æ£„] playerEjectDuration å·²ç§»é™¤ï¼Œäº¤ç”± PlayerController è™•ç†
     [SerializeField] private float playerEjectSpeed = 15f;
     [SerializeField] private float playerRotateSpeed = 1f;
 
-    [Header("¤º«Ø­µ®Ä³]©w")]
+    [Header("å…§å»ºéŸ³æ•ˆè¨­å®š")]
     [SerializeField] private AudioEmitter audioEmitter;
     [SerializeField] private string absorbSound = "Absorb";
     [SerializeField] private string ejectSound = "Eject";
     [SerializeField] private float absorbCooldown = 0.1f;
 
-    [Header("½Õ¸Õ³]¸m")]
+    [Header("èª¿è©¦è¨­ç½®")]
     [SerializeField] private bool showTriggerGizmos = true;
     [SerializeField] private Color triggerColor = new Color(1f, 0.5f, 0f, 0.3f);
 
@@ -53,7 +53,7 @@ public class BlackHoleObstacle : BaseObstacle
         public float elapsed;
     }
 
-    // [­«ÂIµùÄÀ] ©Ş°£¤¾¾lªº Ejecting ª¬ºA¡A¸Ñ¨Mª¬ºA²æ¸`
+    // [é‡é»è¨»é‡‹] æ‹”é™¤å†—é¤˜çš„ Ejecting ç‹€æ…‹ï¼Œè§£æ±ºç‹€æ…‹è„«ç¯€
     private enum PlayerState { Absorbing, Waiting }
 
     private struct PlayerAbsorbData
@@ -261,7 +261,7 @@ public class BlackHoleObstacle : BaseObstacle
                 {
                     if (audioEmitter != null) audioEmitter.PlayOneShot(ejectSound);
 
-                    // [­«ÂIµùÄÀ] ¦R¥X¥hªºÀş¶¡¡Aª½±µµ²®×¨Ã§â³Ñ¤Uªººt¥X¥şÅv¥æµ¹ PlayerController¡A¨¾¤îÀş²¾¡I
+                    // [é‡é»è¨»é‡‹] åå‡ºå»çš„ç¬é–“ï¼Œç›´æ¥çµæ¡ˆä¸¦æŠŠå‰©ä¸‹çš„æ¼”å‡ºå…¨æ¬Šäº¤çµ¦ PlayerControllerï¼Œé˜²æ­¢ç¬ç§»ï¼
                     data.player.ExitBlackHole(data.ejectDir, playerEjectSpeed);
                     _hasPlayerAbsorb = false;
                     return;

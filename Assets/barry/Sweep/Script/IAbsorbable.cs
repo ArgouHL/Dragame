@@ -1,18 +1,18 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
-/// �Ҧ���Q�¬}�l�J�����󥲶���@������
+/// 所有能被黑洞吸入的物件必須實作此介面
 /// </summary>
 public interface IAbsorbable
 {
     /// <summary>
-    /// ���e�O�_���\�Q�l�J (�Ҧp���a�L�Įɦ^�� false)
+    /// 當前是否允許被吸入 (例如玩家無敵時回傳 false)
     /// </summary>
     bool CanBeAbsorbed { get; }
 
     /// <summary>
-    /// ��Ĳ�o�l�J�ɩI�s
+    /// 當觸發吸入時呼叫
     /// </summary>
-    /// <param name="blackHole">�l�J�����¬}��ҡA�Ω���U�ʵe�^��</param>
+    /// <param name="blackHole">吸入它的黑洞實例，用於註冊動畫回調</param>
     void OnAbsorbStart(BlackHoleObstacle blackHole);
 }

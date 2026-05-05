@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using TMPro;
 using UnityEngine.Events;
 
@@ -9,13 +9,13 @@ public class TrashCounterPresenter : MonoBehaviour
     [System.Serializable]
     public class IntIntEvent : UnityEvent<int, int> { }
 
-    public IntIntEvent onChanged; // ·Q¦b Inspector ¸j§Oªº UI ¤]¥i¥H
+    public IntIntEvent onChanged; // æƒ³åœ¨ Inspector ç¶åˆ¥çš„ UI ä¹Ÿå¯ä»¥
 
     private void OnEnable()
     {
         TrashCounter.Changed += HandleChanged;
 
-        // ¥ß¨è¦P¨B¤@¦¸¡AÁ×§K®É§Ç°İÃD
+        // ç«‹åˆ»åŒæ­¥ä¸€æ¬¡ï¼Œé¿å…æ™‚åºå•é¡Œ
         HandleChanged(TrashCounter.Collected, TrashCounter.Total);
     }
 

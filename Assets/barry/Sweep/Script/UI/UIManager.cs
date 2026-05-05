@@ -8,7 +8,6 @@ using System.Collections;
 
 public class UIManager : MonoBehaviour
 {
-    // [重點註釋] 序列化結構體，允許在面板動態調整評級階層與分數門檻，徹底解耦資料與邏輯
     [System.Serializable]
     public struct GradeThreshold
     {
@@ -18,13 +17,13 @@ public class UIManager : MonoBehaviour
     }
 
     [Header("=== 調試設置 ===")]
-    [SerializeField, Tooltip("開啟以在 Console 追蹤 UI 與遊戲狀態切換")]
+    [SerializeField, Tooltip("開啟以在主控台追蹤介面與狀態切換")]
     private bool showDebugLogs = true;
 
     [Header("=== 分數 UI ===")]
     [SerializeField] private TMP_Text scoreText;
     [SerializeField, Tooltip("加分時放大的最大倍率")] private float punchScaleMultiplier = 1.5f;
-    [SerializeField, Tooltip("動效演出時間(秒)")] private float punchDuration = 0.2f;
+    [SerializeField, Tooltip("動效演出時間")] private float punchDuration = 0.2f;
     [SerializeField, Tooltip("加分瞬間的高亮顏色")] private Color punchColor = new Color(1f, 0.8f, 0f, 1f);
 
     [Header("=== 垃圾計數 UI ===")]
@@ -46,37 +45,45 @@ public class UIManager : MonoBehaviour
 
     [Header("=== 黑洞等級 UI ===")]
     [SerializeField] private Image blackHoleLevelIcon;
-    [SerializeField, Tooltip("依序放入LV1~LV5的圖片")] private Sprite[] levelSprites;
+    [SerializeField, Tooltip("依序放入各等級的圖片")] private Sprite[] levelSprites;
 
     [Header("=== 暫停選單 UI ===")]
     [SerializeField] private GameObject pausePanel;
     [SerializeField] private Button continueButton;
     [SerializeField] private Button teachButton;
-    [SerializeField] private GameObject teachPanel;
     [SerializeField] private Button pauseRestartButton;
     [SerializeField] private Button pauseToStartButton;
+
+    [Header("=== 教學 UI ===")]
+    [SerializeField, Tooltip("將帶有圖片與按鈕元件的教學面板拖入")]
+    private GameObject teachPanel;
+    [SerializeField, Tooltip("依序放入教學圖片，將隨點擊切換")]
+    private Sprite[] teachSprites;
 
     [Header("=== 結束 UI ===")]
     [SerializeField] private GameObject endPanel;
     [SerializeField] private TMP_Text endScoreText;
+    [SerializeField] private Button endRestartButton;
     [SerializeField] private Button endToStartButton;
 
     [Header("=== 結算評級 UI ===")]
     [SerializeField] private Image endGradeImage;
-    [SerializeField, Tooltip("請嚴格依照分數『由高到低』排列設定，程式將採首次命中判定")]
+    [SerializeField, Tooltip("請嚴格依照分數由高到低排列設定")]
     private GradeThreshold[] gradeSettings;
 
     [Header("=== 輸入綁定 ===")]
     [SerializeField] private InputAction pauseAction = new InputAction("Pause", binding: "<Keyboard>/escape");
 
-    private InputAction closeTeachAction;
     private bool isPaused;
     private bool isTeaching;
     private bool isGameOver;
     private float remainingTime;
     private int lastDisplaySeconds = -1;
     private int currentScore;
+    private int currentTeachIndex;
+    private bool blockInputThisFrame = false; // 用於防止按鈕點擊與 Update 衝突
 
+    private Image _teachImage;
     private Vector3 _originalScoreScale;
     private Color _originalScoreColor;
     private Coroutine _scorePunchRoutine;
@@ -84,12 +91,13 @@ public class UIManager : MonoBehaviour
 
     private void Awake()
     {
-        closeTeachAction = new InputAction("CloseTeach", InputActionType.Button);
-        closeTeachAction.AddBinding("<Mouse>/leftButton");
-        closeTeachAction.AddBinding("<Mouse>/rightButton");
-
         GraphicsSettings.transparencySortMode = TransparencySortMode.CustomAxis;
         GraphicsSettings.transparencySortAxis = new Vector3(0, 1, 0);
+
+        if (teachPanel != null)
+        {
+            _teachImage = teachPanel.GetComponent<Image>();
+        }
     }
 
     private void OnEnable()
@@ -103,12 +111,11 @@ public class UIManager : MonoBehaviour
         teachButton?.onClick.AddListener(OnTeachClicked);
         pauseRestartButton?.onClick.AddListener(OnRestartGame);
         pauseToStartButton?.onClick.AddListener(OnReturnToStartMenu);
+        endRestartButton?.onClick.AddListener(OnRestartGame);
         endToStartButton?.onClick.AddListener(OnReturnToStartMenu);
 
         pauseAction.Enable();
         pauseAction.performed += OnPauseActionTriggered;
-        closeTeachAction.Enable();
-        closeTeachAction.performed += OnCloseTeachActionTriggered;
     }
 
     private void OnDisable()
@@ -122,19 +129,18 @@ public class UIManager : MonoBehaviour
         teachButton?.onClick.RemoveListener(OnTeachClicked);
         pauseRestartButton?.onClick.RemoveListener(OnRestartGame);
         pauseToStartButton?.onClick.RemoveListener(OnReturnToStartMenu);
+        endRestartButton?.onClick.RemoveListener(OnRestartGame);
         endToStartButton?.onClick.RemoveListener(OnReturnToStartMenu);
 
         pauseAction.Disable();
-        closeTeachAction.Disable();
     }
 
     private void Start()
     {
-        Log("初始化 UI 系統，強制顯示開場說明。");
+        Log("初始化介面系統，啟動狀態設定。");
 
         isGameOver = false;
         isPaused = false;
-        isTeaching = true;
         remainingTime = gameDuration;
         currentScore = 0;
 
@@ -148,11 +154,7 @@ public class UIManager : MonoBehaviour
         pausePanel?.SetActive(false);
         endPanel?.SetActive(false);
 
-        if (teachPanel != null)
-        {
-            teachPanel.SetActive(true);
-            teachPanel.transform.SetAsLastSibling();
-        }
+        OpenTeachPanel();
 
         UpdateTimerText();
         RefreshTrash(TrashCounter.Collected, TrashCounter.Total);
@@ -172,6 +174,22 @@ public class UIManager : MonoBehaviour
 
     private void Update()
     {
+        // 處理教學面板點擊換圖
+        if (isTeaching)
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
+                if (blockInputThisFrame) return; // 如果是開啟面板的那一幀，不做反應
+                AdvanceTeachImage();
+            }
+        }
+
+        // 每一幀結束前重置輸入擋箭牌
+        if (blockInputThisFrame)
+        {
+            blockInputThisFrame = false;
+        }
+
         if (isPaused || isTeaching || isGameOver) return;
 
         remainingTime -= Time.deltaTime;
@@ -260,7 +278,6 @@ public class UIManager : MonoBehaviour
 
     private void OnSkillModeChanged(BroomMode mode)
     {
-        Log($"切換技能模式: {mode}");
         SetImageAlpha(skill1Icon, mode == BroomMode.Impact ? 1f : inactiveAlpha);
         SetImageAlpha(skill2Icon, mode == BroomMode.Sticky ? 1f : inactiveAlpha);
     }
@@ -319,7 +336,6 @@ public class UIManager : MonoBehaviour
     private void PauseGame()
     {
         if (isGameOver) return;
-        Log("觸發暫停。");
         isPaused = true;
 
         if (pausePanel != null)
@@ -333,7 +349,6 @@ public class UIManager : MonoBehaviour
     private void ResumeGame()
     {
         if (isGameOver) return;
-        Log("解除暫停，遊戲繼續。");
         isPaused = isTeaching = false;
 
         pausePanel?.SetActive(false);
@@ -344,8 +359,14 @@ public class UIManager : MonoBehaviour
     private void OnTeachClicked()
     {
         if (isGameOver) return;
-        Log("開啟教學面板。");
+        OpenTeachPanel();
+    }
+
+    private void OpenTeachPanel()
+    {
         isTeaching = true;
+        currentTeachIndex = 0;
+        blockInputThisFrame = true; // 標記此幀不偵測點擊，避免按鈕衝突
         pausePanel?.SetActive(false);
 
         if (teachPanel != null)
@@ -353,12 +374,38 @@ public class UIManager : MonoBehaviour
             teachPanel.SetActive(true);
             teachPanel.transform.SetAsLastSibling();
         }
+
+        UpdateTeachDisplay();
+    }
+
+    private void AdvanceTeachImage()
+    {
+        if (!isTeaching) return;
+
+        currentTeachIndex++;
+
+        if (teachSprites != null && currentTeachIndex < teachSprites.Length)
+        {
+            UpdateTeachDisplay();
+        }
+        else
+        {
+            Log("教學圖片播放完畢，關閉面板。");
+            CloseTeachPanel();
+        }
+    }
+
+    private void UpdateTeachDisplay()
+    {
+        if (_teachImage != null && teachSprites != null && currentTeachIndex < teachSprites.Length)
+        {
+            _teachImage.sprite = teachSprites[currentTeachIndex];
+        }
     }
 
     private void CloseTeachPanel()
     {
         if (isGameOver) return;
-        Log("關閉教學面板。");
         isTeaching = false;
         teachPanel?.SetActive(false);
 
@@ -376,11 +423,6 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    private void OnCloseTeachActionTriggered(InputAction.CallbackContext context)
-    {
-        if (isTeaching) CloseTeachPanel();
-    }
-
     private void GameOver(string reason)
     {
         if (isGameOver) return;
@@ -393,7 +435,6 @@ public class UIManager : MonoBehaviour
 
         if (endScoreText != null) endScoreText.text = currentScore.ToString();
 
-        // [重點註釋] 執行評級結算判定，利用早期返回（Break）優化迴圈效能
         if (endGradeImage != null && gradeSettings != null && gradeSettings.Length > 0)
         {
             Sprite finalGrade = null;
@@ -427,14 +468,12 @@ public class UIManager : MonoBehaviour
 
     private void OnRestartGame()
     {
-        Log("重新開始當前關卡。");
         Time.timeScale = 1f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     private void OnReturnToStartMenu()
     {
-        Log("返回主畫面。");
         Time.timeScale = 1f;
         SceneManager.LoadScene("StartMenu");
     }
@@ -449,8 +488,6 @@ public class UIManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        closeTeachAction?.Dispose();
-
         if (_cachedPlayerController != null)
         {
             _cachedPlayerController.OnModeChanged -= OnSkillModeChanged;

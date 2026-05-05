@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -22,6 +23,17 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     private float vfxHitCooldown = 0.1f;
     private float _vfxCooldownTimer = 0f;
 
+    [Header("=== 防穿模與重物阻擋 (連續碰撞) ===")]
+    [SerializeField, Tooltip("實體阻擋半徑 (低於 sweepRadius，代表掃把本體的物理邊界)")]
+    public float bodyCollisionRadius = 0.5f;
+    [SerializeField, Tooltip("重量比率閾值：垃圾重量 / 掃把重量 >= 此值，即視為推不動的重物")]
+    public float heavyTrashWeightRatio = 1.5f;
+    [SerializeField, Tooltip("撞擊重物時，給予重物的微小推力比例")]
+    private float heavyTrashNudgeForce = 0.05f;
+
+    // [重點註釋] 預配置緩存列表，避免防穿模運算造成 GC Alloc
+    private readonly List<BaseTrash> _nearbyObstacles = new List<BaseTrash>(32);
+
     [Header("=== 基礎組件 ===")]
     public Vector2 fixForWall;
     public Rigidbody2D rb;
@@ -41,7 +53,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     public event Action<TrashType> OnTrashHitEvent;
     public event Action<float> OnScaleChanged;
 
-    // [重點註釋] 新增冷卻更新事件供 UI 訂閱
     public event Action<float, float> OnRightSkillCooldownUpdate;
 
     // Input Actions
@@ -298,7 +309,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     {
         if (isBeingAbsorbed || pointerPosition == null) return;
 
-        // [重點註釋] 右鍵技能冷卻計算與 UI 廣播
         if (_currentRightSkillCooldown > 0f)
         {
             _currentRightSkillCooldown -= Time.deltaTime;
@@ -392,23 +402,93 @@ public class PlayerController : MonoBehaviour, IAbsorbable
                 return;
             }
 
-            rb.linearVelocity = velocityVector;
+            // [重點註釋] 幾何防穿模：位移賦值前，主動檢查並強行分離實體交疊
+            bool blockedByHeavy = false;
+            nextPos = ResolveObstaclePenetrations(nextPos, ref blockedByHeavy);
 
-            float damping = 1f - (deceleration * Time.fixedDeltaTime);
-            currentSpeed *= Mathf.Clamp01(damping);
-            if (currentSpeed < 0.05f) currentSpeed = 0f;
+            rb.position = nextPos;
 
-            float effectiveMax = GetEffectiveMaxSpeed();
-            sweepPower = Mathf.Clamp01(currentSpeed / effectiveMax);
+            if (blockedByHeavy)
+            {
+                // 若被重物完全阻擋，立刻剝奪動力，防止鑽模
+                currentSpeed = 0f;
+                rb.linearVelocity = Vector2.zero;
+                effectManager.StopTrail();
+            }
+            else
+            {
+                rb.linearVelocity = velocityVector;
 
-            effectManager.UpdateTrail(center, moveDir, sweepPower, true);
-            OnSweepMove?.Invoke(GetDynamicSweepCenter(), GetEffectiveSweepRadius(), moveDir, sweepPower);
+                float damping = 1f - (deceleration * Time.fixedDeltaTime);
+                currentSpeed *= Mathf.Clamp01(damping);
+                if (currentSpeed < 0.05f) currentSpeed = 0f;
+
+                float effectiveMax = GetEffectiveMaxSpeed();
+                sweepPower = Mathf.Clamp01(currentSpeed / effectiveMax);
+
+                effectManager.UpdateTrail(center, moveDir, sweepPower, true);
+                OnSweepMove?.Invoke(GetDynamicSweepCenter(), GetEffectiveSweepRadius(), moveDir, sweepPower);
+            }
         }
         else
         {
             rb.linearVelocity = Vector2.zero;
             effectManager.StopTrail();
         }
+    }
+
+    // [重點註釋] 連續幾何防穿模演算法：不僅排斥重物，也強行擠出輕垃圾達成 0 穿模
+    private Vector2 ResolveObstaclePenetrations(Vector2 projectedPos, ref bool blocked)
+    {
+        if (currentMode == BroomMode.Sticky || SpatialGridManager.Instance == null)
+            return projectedPos;
+
+        Vector2 sweepCenter = projectedPos + sweepOffset;
+        SpatialGridManager.Instance.GetTrashAroundPosition(sweepCenter, _nearbyObstacles);
+
+        for (int i = 0; i < _nearbyObstacles.Count; i++)
+        {
+            BaseTrash trash = _nearbyObstacles[i];
+            if (trash == null || trash.IsAbsorbing || trash._isStuck) continue;
+
+            float massRatio = trash.Weight / Mathf.Max(0.01f, wieght);
+            bool isHeavy = massRatio >= heavyTrashWeightRatio;
+
+            for (int n = 0; n < trash.collisionNodes.Length; n++)
+            {
+                Vector2 trashNodePos = (Vector2)trash.transform.position + trash.collisionNodes[n];
+                Vector2 toTrash = trashNodePos - sweepCenter;
+                float distSqr = toTrash.sqrMagnitude;
+                float minDist = bodyCollisionRadius + trash.collisionCheckRadius;
+
+                if (distSqr < minDist * minDist)
+                {
+                    float dist = Mathf.Sqrt(distSqr);
+                    float penetration = minDist - dist;
+                    Vector2 pushDir = (dist > 0.001f) ? -toTrash / dist : -moveDir;
+                    if (pushDir == Vector2.zero) pushDir = Vector2.up; // 極端防護
+
+                    if (isHeavy)
+                    {
+                        // 重物：玩家被推回，且不對重物施加任何推力，保證重物絕對靜止
+                        projectedPos += pushDir * penetration;
+                        sweepCenter = projectedPos + sweepOffset;
+                        blocked = true;
+                    }
+                    else
+                    {
+                        // 輕物：主動將垃圾座標強行擠出物理邊界，達成零穿模
+                        Vector2 correction = -pushDir * penetration;
+                        trash.transform.position = (Vector2)trash.transform.position + correction;
+
+                        // 補上撞擊觸發，讓垃圾順勢飛走
+                        float power = Mathf.Clamp01(currentSpeed / Mathf.Max(GetEffectiveMaxSpeed(), 0.01f));
+                        trash.ApplyBroomHit(moveDir, power);
+                    }
+                }
+            }
+        }
+        return projectedPos;
     }
 
     private void LateUpdate()
@@ -502,7 +582,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         effectManager.UpdateDragLine(c, c);
     }
 
-    // [遺失補回] 左鍵放開邏輯
     private void OnRelease(InputAction.CallbackContext ctx)
     {
         isLeftDown = false;
@@ -696,6 +775,9 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     {
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(GetSweepCenter(), sweepRadius);
+
+        Gizmos.color = Color.magenta;
+        Gizmos.DrawWireSphere(GetSweepCenter(), bodyCollisionRadius);
 
         if (Application.isPlaying)
         {

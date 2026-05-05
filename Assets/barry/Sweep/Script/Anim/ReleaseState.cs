@@ -1,9 +1,9 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.InputSystem; 
 
 public class ReleaseState : PlayerState
 {
-    // ¹ïÀ³ Animator ¸Ìªº "Release" (Bool)
+    // å°æ‡‰ Animator è£¡çš„ "Release" (Bool)
     public ReleaseState(string animBoolName, PlayerAnimatorController player, PlayerStateMachine stateMachine)
         : base(animBoolName, player, stateMachine)
     {

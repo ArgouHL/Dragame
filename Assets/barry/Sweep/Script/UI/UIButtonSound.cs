@@ -1,7 +1,7 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
 
-// ±j¨î¨Ì¿à Button ²Õ¥ó¡AÁ×§K±¾¿ùª«¥ó¾É­P³ø¿ù
+// å¼·åˆ¶ä¾è³´ Button çµ„ä»¶ï¼Œé¿å…æ›éŒ¯ç‰©ä»¶å°è‡´å ±éŒ¯
 [RequireComponent(typeof(Button))]
 public class UIButtonSound : MonoBehaviour
 {
@@ -11,13 +11,13 @@ public class UIButtonSound : MonoBehaviour
     {
         targetButton = GetComponent<Button>();
 
-        // °ÊºA¸j©wÂIÀ»¨Æ¥ó¡A§K°£¤â°Ê³]©w­±ªOªºÁcº¾¡A¨Ã§¹¬ü¤ä´©µ{¦¡°ÊºA¥Í¦¨ªº«ö¶s
+        // å‹•æ…‹ç¶å®šé»æ“Šäº‹ä»¶ï¼Œå…é™¤æ‰‹å‹•è¨­å®šé¢æ¿çš„ç¹ç‘£ï¼Œä¸¦å®Œç¾æ”¯æ´ç¨‹å¼å‹•æ…‹ç”Ÿæˆçš„æŒ‰éˆ•
         targetButton.onClick.AddListener(OnButtonClicked);
     }
 
     private void OnButtonClicked()
     {
-        // ½T«O¥ş°ìºŞ²z­û¦s¦b®É¤~Ä²µo¡AÁ×§K¤Á´«³õ´º©ÎÃö³¬¹CÀ¸®ÉªºªÅ°Ñ¦Ò²§±`
+        // ç¢ºä¿å…¨åŸŸç®¡ç†å“¡å­˜åœ¨æ™‚æ‰è§¸ç™¼ï¼Œé¿å…åˆ‡æ›å ´æ™¯æˆ–é—œé–‰éŠæˆ²æ™‚çš„ç©ºåƒè€ƒç•°å¸¸
         if (AudioManager.Instance != null)
         {
             AudioManager.Instance.PlayUIClick();
@@ -26,7 +26,7 @@ public class UIButtonSound : MonoBehaviour
 
     private void OnDestroy()
     {
-        // ¨¾¿m©Ê³]­p¡Gª«¥ó¾P·´®É¥D°Ê¸Ñ°£¸j©w¡Aªıµ´¼ç¦bªº°O¾ĞÅé¬y¥¢
+        // é˜²ç¦¦æ€§è¨­è¨ˆï¼šç‰©ä»¶éŠ·æ¯€æ™‚ä¸»å‹•è§£é™¤ç¶å®šï¼Œé˜»çµ•æ½›åœ¨çš„è¨˜æ†¶é«”æµå¤±
         if (targetButton != null)
         {
             targetButton.onClick.RemoveListener(OnButtonClicked);

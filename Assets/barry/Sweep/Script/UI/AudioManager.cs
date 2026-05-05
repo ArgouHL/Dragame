@@ -1,20 +1,20 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class AudioManager : MonoBehaviour
 {
     public static AudioManager Instance { get; private set; }
 
-    [Header("­µ­y³]¸m")]
+    [Header("éŸ³è»Œè¨­ç½®")]
     [SerializeField] private AudioSource bgmSource;
     [SerializeField] private AudioSource sfxSource;
     [SerializeField] private AudioSource uiAudioSource;
 
-    [Header("¤¶­±­µ®Ä")]
+    [Header("ä»‹é¢éŸ³æ•ˆ")]
     [SerializeField] private AudioClip uiClickSound;
 
     private void Awake()
     {
-        // ½T«O¥ş°ì°ß¤@©Ê¨Ã¸ó³õ´º«O¯d¡Aºû«ù³æ¨Ò¥Í©R¶g´Á
+        // ç¢ºä¿å…¨åŸŸå”¯ä¸€æ€§ä¸¦è·¨å ´æ™¯ä¿ç•™ï¼Œç¶­æŒå–®ä¾‹ç”Ÿå‘½é€±æœŸ
         if (Instance == null)
         {
             Instance = this;
@@ -43,7 +43,7 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    // °ß¤@ªº³q¥Î«ö¶sÂIÀ»¨Æ¥ó¡A°ª«×ºëÂ²¤Æ
+    // å”¯ä¸€çš„é€šç”¨æŒ‰éˆ•é»æ“Šäº‹ä»¶ï¼Œé«˜åº¦ç²¾ç°¡åŒ–
     public void PlayUIClick()
     {
         if (uiClickSound != null && uiAudioSource != null)

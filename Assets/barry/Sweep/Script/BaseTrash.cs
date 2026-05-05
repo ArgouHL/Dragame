@@ -30,8 +30,8 @@ public class BaseTrash : BasePoolItem, IAbsorbable
 
     [Header("碰撞檢測 (串珠節點法)")]
     [Tooltip("新增多個節點來拼湊出長條形。如果只有一個點，就是普通的圓形。")]
-    [SerializeField] private Vector2[] collisionNodes = { Vector2.zero };
-    [SerializeField] private float collisionCheckRadius = 0.45f;
+    [SerializeField] public Vector2[] collisionNodes = { Vector2.zero };
+    [SerializeField] public float collisionCheckRadius = 0.45f;
     [SerializeField] private float hitCooldown = 0.2f;
     [SerializeField] private float collisionDamping = 0.8f;
     [SerializeField] private float minCollisionSpeed = 0.1f;
@@ -255,8 +255,6 @@ public class BaseTrash : BasePoolItem, IAbsorbable
     private float GetVelocityDamping(float deltaTime)
     {
         float effectiveWeight = Mathf.Max(weight, 0.01f);
-
-        // [重點註釋] 輕物件保留更多慣性、重物件更快收束，避免輕垃圾出現突兀的瞬停感。
         float drag = Mathf.Max(0f, deceleration) * Mathf.Sqrt(effectiveWeight);
         if (drag <= 0f) return 0f;
 
@@ -351,6 +349,30 @@ public class BaseTrash : BasePoolItem, IAbsorbable
     private void ResolveOverlap(ref Vector2 pos)
     {
         if (_isStuck || collisionNodes == null || collisionNodes.Length == 0) return;
+
+        // [重點註釋] 防穿模新增：垃圾端主動避開玩家本體，確保自身移動時也不會擠進去
+        PlayerController player = PlayerController.instance;
+        if (player != null && player.currentMode == BroomMode.Impact && !player.isBeingAbsorbed)
+        {
+            Vector2 playerCenter = player.GetSweepCenter();
+            float playerRadius = player.bodyCollisionRadius;
+
+            for (int n = 0; n < collisionNodes.Length; n++)
+            {
+                Vector2 myCenter = pos + collisionNodes[n];
+                Vector2 toPlayer = playerCenter - myCenter;
+                float distSqr = toPlayer.sqrMagnitude;
+                float minDist = playerRadius + collisionCheckRadius;
+
+                if (distSqr < minDist * minDist)
+                {
+                    float dist = Mathf.Sqrt(distSqr);
+                    float penetration = minDist - dist;
+                    Vector2 pushDir = (dist > 0.001f) ? -toPlayer / dist : Vector2.down;
+                    pos += pushDir * penetration;
+                }
+            }
+        }
 
         SpatialGridManager grid = SpatialGridManager.Instance;
         if (grid == null) return;
@@ -468,8 +490,6 @@ public class BaseTrash : BasePoolItem, IAbsorbable
     private void HandleBoundaryCheck(ref Vector2 pos)
     {
         if (WorldBounds2D.Instance == null) return;
-
-        // [重點註釋] 邊界反彈仍交給統一的世界邊界系統，避免各物件各自算邊界造成手感不一致。
         WorldBounds2D.Instance.Bounce(ref pos, ref currentVelocity, viewportPadding, collisionDamping);
     }
 

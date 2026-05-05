@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class PlayerMoveState : PlayerState
 {
@@ -9,16 +9,16 @@ public class PlayerMoveState : PlayerState
 
     public override void Update()
     {
-        base.Update(); // «O«ù¤÷Ãş§O Update
+        base.Update(); // ä¿æŒçˆ¶é¡åˆ¥ Update
 
-        // 1. Àò¨ú³t«×
+        // 1. ç²å–é€Ÿåº¦
         Vector2 vel = PlayerController.instance.rb.linearVelocity;
         float speed = vel.magnitude;
 
-        // 2. ¡¹ÃöÁä­×¥¿¡G¥²¶·§ó·s Speed °Ñ¼Æ¡A§_«h BlendTree ¤£·|°Ê
+        // 2. â˜…é—œéµä¿®æ­£ï¼šå¿…é ˆæ›´æ–° Speed åƒæ•¸ï¼Œå¦å‰‡ BlendTree ä¸æœƒå‹•
         PlayerAnimatorController.instance.anim.SetFloat("Speed", speed);
 
-        // 3. §ó·s¤è¦V°Ñ¼Æ («O«ù§A­ì¥»ªºÅŞ¿è)
+        // 3. æ›´æ–°æ–¹å‘åƒæ•¸ (ä¿æŒä½ åŸæœ¬çš„é‚è¼¯)
         if (speed > 0.001f)
         {
             Vector2 dir = vel.normalized;
@@ -26,8 +26,8 @@ public class PlayerMoveState : PlayerState
             PlayerAnimatorController.instance.anim.SetFloat("VelY", dir.y);
         }
 
-        // 4. ¤Á´«¦^ Idle ªº±ø¥ó
-        // «ØÄ³µy·L´£°ª¤@ÂIªùÂe (¨Ò¦p 0.01 ©Î 0.1)¡AÁ×§K¯BÂI¼Æ»~®t¾É­P§İ°Ê
+        // 4. åˆ‡æ›å› Idle çš„æ¢ä»¶
+        // å»ºè­°ç¨å¾®æé«˜ä¸€é»é–€æª» (ä¾‹å¦‚ 0.01 æˆ– 0.1)ï¼Œé¿å…æµ®é»æ•¸èª¤å·®å°è‡´æŠ–å‹•
         if (speed < 0.01f)
         {
             stateMachine.ChangeState(PlayerAnimatorController.instance.idleState);

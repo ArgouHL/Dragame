@@ -11,15 +11,17 @@ public class PetAI : MonoBehaviour
     [System.Serializable]
     public struct PetLevelConfig
     {
-        [Tooltip("¤É¯Å¨ì¤U¤@µ¥©Ò»İ²Ö¿n¦Y±¼ªº©U§£Á`¶q (­Y¬°³Ì°ªµ¥«hµLµø)")]
+        [Tooltip("å‡ç´šåˆ°ä¸‹ä¸€ç­‰æ‰€éœ€ç´¯ç©åƒæ‰çš„åƒåœ¾ç¸½é‡ (è‹¥ç‚ºæœ€é«˜ç­‰å‰‡ç„¡è¦–)")]
         public int requiredTotalTrash;
-        [Tooltip("¸Óµ¥¯ÅªºÅé¿nÁY©ñ¤ñ¨Ò")]
+        [Tooltip("è©²ç­‰ç´šçš„é«”ç©ç¸®æ”¾æ¯”ä¾‹")]
         public float scaleMultiplier;
-        [Tooltip("¸Óµ¥¯Å³Ì°ª¯à¦Yªº©U§£¶¥¯Å (¨Ò¦p¶ñ 2¡A´N¯à¦Y tier 1 ©M tier 2 ªº©U§£)")]
+        [Tooltip("è©²ç­‰ç´šæœ€é«˜èƒ½åƒçš„åƒåœ¾éšç´š (ä¾‹å¦‚å¡« 2ï¼Œå°±èƒ½åƒ tier 1 å’Œ tier 2 çš„åƒåœ¾)")]
         public int maxEatTier;
+        [Tooltip("è©²ç­‰ç´šå°æ‡‰çš„å‹•ç•«æ§åˆ¶å™¨ (è‹¥ç‚º null å‰‡ä¿æŒç•¶å‰)")]
+        public RuntimeAnimatorController animatorController;
     }
 
-    [Header("=== 1. «ùÄò²¾°Ê (Moving) ===")]
+    [Header("=== 1. æŒçºŒç§»å‹• (Moving) ===")]
     [SerializeField] private float minWalkDistance = 3f;
     [SerializeField] private float maxWalkDistance = 8f;
     [SerializeField] private float moveSpeed = 3f;
@@ -28,16 +30,21 @@ public class PetAI : MonoBehaviour
     [SerializeField] private float suckForce = 20f;
     [SerializeField] private LayerMask trashLayer;
 
-    [Header("=== 2. ¹¡¸¡¹Ã¦R (Vomit) ===")]
+    [Header("=== 2. é£½è…¹å˜”å (Vomit) ===")]
     [SerializeField] private List<TrashType> vomitTriggers;
     [SerializeField] private int vomitScorePenalty = 50;
     [SerializeField] private float vomitForce = 5f;
 
-    [Header("=== 3. ¦¨ªø¨t²Î (Growth) ===")]
+    [Header("=== 3. æˆé•·ç³»çµ± (Growth) ===")]
     [SerializeField] private float eatingPauseDuration = 1f;
     [SerializeField] private PetLevelConfig[] levelConfigs;
 
-    [Header("Debug ¸ê°T")]
+    [Header("=== 4. å‹•ç•«æ§åˆ¶ (Animation) ===")]
+    [SerializeField] private Animator petAnimator;
+
+    private static readonly int AnimHashIsEating = Animator.StringToHash("IsEating");
+
+    [Header("Debug è³‡è¨Š")]
     [SerializeField] private PetState currentState;
     [SerializeField] private int currentLevel;
     [SerializeField] private int totalEaten;
@@ -60,6 +67,9 @@ public class PetAI : MonoBehaviour
     private void Awake()
     {
         _rb = GetComponent<Rigidbody2D>();
+
+        if (petAnimator == null)
+            petAnimator = GetComponentInChildren<Animator>();
 
         _trashFilter = new ContactFilter2D
         {
@@ -104,7 +114,7 @@ public class PetAI : MonoBehaviour
         EnsureWithinBounds();
     }
 
-    #region --- ª¬ºA¾÷¤j¸£ ---
+    #region --- ç‹€æ…‹æ©Ÿå¤§è…¦ ---
     private void UpdateStateMachine()
     {
         switch (currentState)
@@ -134,6 +144,8 @@ public class PetAI : MonoBehaviour
         currentState = newState;
         _stateTimer = 0f;
 
+        UpdateAnimationState(newState);
+
         switch (newState)
         {
             case PetState.Moving:
@@ -148,9 +160,25 @@ public class PetAI : MonoBehaviour
                 break;
         }
     }
+
+    private void UpdateAnimationState(PetState state)
+    {
+        if (petAnimator == null) return;
+
+        switch (state)
+        {
+            case PetState.Eating:
+                petAnimator.SetBool(AnimHashIsEating, true);
+                break;
+            case PetState.Moving:
+            case PetState.Vomiting:
+                petAnimator.SetBool(AnimHashIsEating, false);
+                break;
+        }
+    }
     #endregion
 
-    #region --- ²¾°Ê»P¾É¯è ---
+    #region --- ç§»å‹•èˆ‡å°èˆª ---
     private Vector2 PickValidTarget()
     {
         Vector2 origin = transform.position;
@@ -194,7 +222,7 @@ public class PetAI : MonoBehaviour
     }
     #endregion
 
-    #region --- ¸z­G¡B¤¬°Ê»P¦¨ªø ---
+    #region --- è…¸èƒƒã€äº’å‹•èˆ‡æˆé•· ---
     private void ApplyLevelData()
     {
         if (levelConfigs == null || levelConfigs.Length == 0 || currentLevel >= levelConfigs.Length) return;
@@ -202,6 +230,12 @@ public class PetAI : MonoBehaviour
         var config = levelConfigs[currentLevel];
         transform.localScale = Vector3.one * config.scaleMultiplier;
         CurrentMaxEatTier = config.maxEatTier;
+
+        if (petAnimator != null && config.animatorController != null)
+        {
+            petAnimator.runtimeAnimatorController = config.animatorController;
+            petAnimator.SetBool(AnimHashIsEating, currentState == PetState.Eating);
+        }
 
         OnPetScaleChanged?.Invoke(config.scaleMultiplier);
     }
@@ -234,24 +268,24 @@ public class PetAI : MonoBehaviour
                     trashRb.AddForce(dir * suckForce);
                 }
 
-                // [­«ÂIµùÄÀ] ¤w²¾°£¦¹³Bª½±µ©I¥s EatTrash ªºÅŞ¿è¡A§ï¥Ñ BlackHoleObstacle ªº Trigger ²Î¤@±µºŞ§l¤JÀş¶¡
+                // [é‡é»è¨»é‡‹] å·²ç§»é™¤æ­¤è™•ç›´æ¥å‘¼å« EatTrash çš„é‚è¼¯ï¼Œæ”¹ç”± BlackHoleObstacle çš„ Trigger çµ±ä¸€æ¥ç®¡å¸å…¥ç¬é–“
             }
         }
     }
 
-    // [­«ÂIµùÄÀ] ¶}©ñÅv­­¡GÅı¥~³¡¡]BlackHoleObstacle¡^¸ß°İ¤j¸£¬O§_¯à¦Y
+    // [é‡é»è¨»é‡‹] é–‹æ”¾æ¬Šé™ï¼šè®“å¤–éƒ¨ï¼ˆBlackHoleObstacleï¼‰è©¢å•å¤§è…¦æ˜¯å¦èƒ½åƒ
     public bool CanEat(BaseTrash trash)
     {
         if (currentState == PetState.Vomiting) return false;
 
         bool isVomitTrigger = _vomitTriggersSet.Contains(trash.trashType);
-        // ¦pªG¤£¬O¶Ê¦Rª«¥B¶¥¯Å¤j©ó¼L¤Ú¡A«h©Úµ´
+        // å¦‚æœä¸æ˜¯å‚¬åç‰©ä¸”éšç´šå¤§æ–¼å˜´å·´ï¼Œå‰‡æ‹’çµ•
         if (!isVomitTrigger && trash.trashTier > CurrentMaxEatTier) return false;
 
         return true;
     }
 
-    // [­«ÂIµùÄÀ] ¶}©ñ¤¶­±¡G·í BlackHoleObstacle ½T©w«r¤U©U§£®É¡A³z¹L¦¹¨ç¼Æ¼g¤J¤j¸£¸ê®Æ
+    // [é‡é»è¨»é‡‹] é–‹æ”¾ä»‹é¢ï¼šç•¶ BlackHoleObstacle ç¢ºå®šå’¬ä¸‹åƒåœ¾æ™‚ï¼Œé€éæ­¤å‡½æ•¸å¯«å…¥å¤§è…¦è³‡æ–™
     public void NotifyTrashEaten(BaseTrash trash)
     {
         bool isVomitTrigger = _vomitTriggersSet.Contains(trash.trashType);

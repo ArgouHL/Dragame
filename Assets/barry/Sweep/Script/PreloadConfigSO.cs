@@ -1,4 +1,4 @@
-
+ï»¿
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -24,11 +24,11 @@ public class ObstaclePreloadConfig
 [CreateAssetMenu(fileName = "NewPreloadConfig", menuName = "Settings/Preload Config")]
 public class PreloadConfigSO : ScriptableObject
 {
-    [Header("©U§£¹w¸ü³]©w")]
-    [Tooltip("¦b¦¹³]©w­n¹w¸üªº¨CºØ©U§£¤Î¨ä¼Æ¶q")]
+    [Header("åƒåœ¾é è¼‰è¨­å®š")]
+    [Tooltip("åœ¨æ­¤è¨­å®šè¦é è¼‰çš„æ¯ç¨®åƒåœ¾åŠå…¶æ•¸é‡")]
     public List<TrashPreloadConfig> trashToPreload;
 
-    [Header("»ÙÃªª«¹w¸ü³]©w")]
-    [Tooltip("¦b¦¹³]©w­n¹w¸üªº¨CºØ»ÙÃªª«¤Î¨ä¼Æ¶q")]
+    [Header("éšœç¤™ç‰©é è¼‰è¨­å®š")]
+    [Tooltip("åœ¨æ­¤è¨­å®šè¦é è¼‰çš„æ¯ç¨®éšœç¤™ç‰©åŠå…¶æ•¸é‡")]
     public List<ObstaclePreloadConfig> obstaclesToPreload;
 }

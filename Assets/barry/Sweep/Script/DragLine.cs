@@ -1,16 +1,16 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class DragLine : MonoBehaviour
 {
     public LineRenderer line;
 
-    [Header("¼e«×³]©w")]
+    [Header("å¯¬åº¦è¨­å®š")]
     [SerializeField] private float minWidth = 0.05f;
     [SerializeField] private float maxWidth = 0.4f;
     [SerializeField] private float maxLength = 5f;
 
-    [Header("Àã·Æ·P¡]¶V¤p¶V·Æ/¶VºC¸ò¤â¡^")]
-    [SerializeField] private float positionFollow = 10f; // 3~8 «Ü·Æ¡F10~20 ¤ñ¸û¸ò¤â
+    [Header("æ¿•æ»‘æ„Ÿï¼ˆè¶Šå°è¶Šæ»‘/è¶Šæ…¢è·Ÿæ‰‹ï¼‰")]
+    [SerializeField] private float positionFollow = 10f; // 3~8 å¾ˆæ»‘ï¼›10~20 æ¯”è¼ƒè·Ÿæ‰‹
     [SerializeField] private float widthFollow = 12f;
 
     private Vector2 targetStart, targetEnd;
@@ -26,12 +26,12 @@ public class DragLine : MonoBehaviour
         line.useWorldSpace = true;
         line.enabled = false;
 
-        // ¥i¿ï¡GÅı½uÀY§À§ó¶ê¼í¡A¬İ°_¨Ó§ó¡u¤ô¡v
+        // å¯é¸ï¼šè®“ç·šé ­å°¾æ›´åœ“æ½¤ï¼Œçœ‹èµ·ä¾†æ›´ã€Œæ°´ã€
         line.numCapVertices = 8;
         line.numCornerVertices = 8;
     }
 
-    // «ü¼Æ¥­·Æ¡Gk ¶V¤j¸ò¶V§Ö¡Fk ¶V¤p¶V¡u·Æ¡v
+    // æŒ‡æ•¸å¹³æ»‘ï¼šk è¶Šå¤§è·Ÿè¶Šå¿«ï¼›k è¶Šå°è¶Šã€Œæ»‘ã€
     private static float ExpSmoothingFactor(float k)
     {
         return 1f - Mathf.Exp(-k * Time.deltaTime);
@@ -43,7 +43,7 @@ public class DragLine : MonoBehaviour
         {
             line.enabled = true;
 
-            // ²Ä¤@¦¸Åã¥Ü¥ı¹ï»ô¡AÁ×§K±q(0,0)·Æ¹L¨Ó
+            // ç¬¬ä¸€æ¬¡é¡¯ç¤ºå…ˆå°é½Šï¼Œé¿å…å¾(0,0)æ»‘éä¾†
             targetStart = currentStart = start;
             targetEnd = currentEnd = end;
 
@@ -52,7 +52,7 @@ public class DragLine : MonoBehaviour
             return;
         }
 
-        // ¥u§ó·s¡u¥Ø¼Ğ¡v¡A¯u¥¿Åã¥Ü¥Ñ Update() ¥­·Æ°l¤W
+        // åªæ›´æ–°ã€Œç›®æ¨™ã€ï¼ŒçœŸæ­£é¡¯ç¤ºç”± Update() å¹³æ»‘è¿½ä¸Š
         targetStart = start;
         targetEnd = end;
         targetWidth = CalcWidth(start, end);
@@ -85,7 +85,7 @@ public class DragLine : MonoBehaviour
         line.SetPosition(1, currentEnd);
 
         line.startWidth = currentWidth;
-        line.endWidth = currentWidth; // ·Q§ó¹³¤ôºw§À¤Ú¥i§ï¤p¡GcurrentWidth * 0.4f
+        line.endWidth = currentWidth; // æƒ³æ›´åƒæ°´æ»´å°¾å·´å¯æ”¹å°ï¼šcurrentWidth * 0.4f
     }
 
     public void HideLine()

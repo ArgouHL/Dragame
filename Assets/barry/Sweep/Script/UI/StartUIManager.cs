@@ -1,29 +1,31 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.Video;
-using System.Collections;
 
 public class StartUIManager : MonoBehaviour
 {
-    [Header("=== �D��� UI ===")]
+    [Header("=== 主選單 UI ===")]
     [SerializeField] private GameObject startPanel;
     [SerializeField] private Button startButton;
     [SerializeField] private Button teachButton;
     [SerializeField] private Button exitButton;
 
-    [Header("=== �������O UI ===")]
+    [Header("=== 說明面板 UI ===")]
     [SerializeField] private GameObject teachPanel;
+    [SerializeField] private Image teachImageDisplay;
+    [SerializeField] private Sprite[] teachSprites;
+    private int currentTeachIndex = 0;
+    private bool blockInputThisFrame = false; // 用於防止按鈕點擊與 Update 衝突
 
-    [Header("=== �v������]�w ===")]
+    [Header("=== 影片播放設定 ===")]
     [SerializeField] private VideoPlayer videoPlayer;
     [SerializeField] private GameObject videoPanel;
 
-    [Header("=== �����W�� ===")]
+    [Header("=== 場景名稱 ===")]
     [SerializeField] private string gameSceneName = "GameScene";
 
     private bool isPlayingVideo = false;
-    private bool isShowingTeachFromMenu = false;
 
     private void OnEnable()
     {
@@ -62,13 +64,27 @@ public class StartUIManager : MonoBehaviour
 
     private void Update()
     {
+        // 處理教學面板點擊換圖
+        if (teachPanel != null && teachPanel.activeSelf)
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
+                if (blockInputThisFrame) return; // 如果是開啟面板的那一幀，不做反應
+                NextTeachImage();
+            }
+        }
+
+        // 處理影片跳過
         if (isPlayingVideo && Input.GetMouseButtonDown(0))
         {
+            if (blockInputThisFrame) return; // 防止點擊「開始遊戲」的瞬間就跳過影片
             SkipVideo();
         }
-        else if (isShowingTeachFromMenu && Input.GetMouseButtonDown(0))
+
+        // 每一幀結束前重置輸入擋箭牌
+        if (blockInputThisFrame)
         {
-            CloseMenuTeachPanel();
+            blockInputThisFrame = false;
         }
     }
 
@@ -79,8 +95,14 @@ public class StartUIManager : MonoBehaviour
         if (videoPlayer != null && videoPanel != null)
         {
             videoPanel.SetActive(true);
+
+            // 修正：重置影片時間到第一幀並開始播放
+            videoPlayer.Stop();
+            videoPlayer.frame = 0;
             videoPlayer.Play();
+
             isPlayingVideo = true;
+            blockInputThisFrame = true; // 標記此幀不偵測點擊，避免按鈕與跳過功能衝突
         }
         else
         {
@@ -108,20 +130,36 @@ public class StartUIManager : MonoBehaviour
         {
             teachPanel.SetActive(true);
             teachPanel.transform.SetAsLastSibling();
-            // �ϥΨ�{����@�V�A�קK�I�����s�����U�ߧYĲ�o Update �̪������޿�
-            StartCoroutine(EnableMenuTeachClosure());
+
+            currentTeachIndex = 0;
+            blockInputThisFrame = true; // 標記此幀不偵測點擊，解決需要「點兩下」的問題
+
+            if (teachSprites != null && teachSprites.Length > 0 && teachImageDisplay != null)
+            {
+                teachImageDisplay.sprite = teachSprites[0];
+            }
         }
     }
 
-    private IEnumerator EnableMenuTeachClosure()
+    private void NextTeachImage()
     {
-        yield return null;
-        isShowingTeachFromMenu = true;
+        currentTeachIndex++;
+
+        if (teachSprites != null && currentTeachIndex < teachSprites.Length)
+        {
+            if (teachImageDisplay != null)
+            {
+                teachImageDisplay.sprite = teachSprites[currentTeachIndex];
+            }
+        }
+        else
+        {
+            CloseMenuTeachPanel();
+        }
     }
 
     private void CloseMenuTeachPanel()
     {
-        isShowingTeachFromMenu = false;
         if (teachPanel != null) teachPanel.SetActive(false);
     }
 

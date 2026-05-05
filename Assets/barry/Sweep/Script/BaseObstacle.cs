@@ -1,4 +1,4 @@
-public abstract class BaseObstacle : BasePoolItem
+﻿public abstract class BaseObstacle : BasePoolItem
 {
 
 
@@ -7,7 +7,7 @@ public abstract class BaseObstacle : BasePoolItem
 
     protected virtual void Deactivate()
     {
-        // �k�٦ۤv
+        // 歸還自己
         ObstaclePool.Instance.ReturnObstacle(this);
     }
 }
