@@ -350,7 +350,6 @@ public class BaseTrash : BasePoolItem, IAbsorbable
     {
         if (_isStuck || collisionNodes == null || collisionNodes.Length == 0) return;
 
-        // [重點註釋] 防穿模新增：垃圾端主動避開玩家本體，確保自身移動時也不會擠進去
         PlayerController player = PlayerController.instance;
         if (player != null && player.currentMode == BroomMode.Impact && !player.isBeingAbsorbed)
         {
@@ -489,8 +488,13 @@ public class BaseTrash : BasePoolItem, IAbsorbable
 
     private void HandleBoundaryCheck(ref Vector2 pos)
     {
-        if (WorldBounds2D.Instance == null) return;
-        WorldBounds2D.Instance.Bounce(ref pos, ref currentVelocity, viewportPadding, collisionDamping);
+        // [重點註釋] 將碰撞依據鎖定在垃圾真實的碰撞中心與真實半徑，杜絕穿模
+        Vector2 primaryNode = (collisionNodes != null && collisionNodes.Length > 0) ? collisionNodes[0] : Vector2.zero;
+        Vector2 nodePos = pos + primaryNode;
+
+        WorldBounds2D.ApplyAllBounces(ref nodePos, ref currentVelocity, collisionCheckRadius, collisionDamping);
+
+        pos = nodePos - primaryNode;
     }
 
     private void StartHitCooldownTimer()

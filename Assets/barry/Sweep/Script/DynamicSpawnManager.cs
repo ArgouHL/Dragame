@@ -46,7 +46,6 @@ public class DynamicSpawnManager : MonoBehaviour
 
         while (!spawner.IsReady) yield return null;
 
-        // 重點邏輯：確保在 LevelSpawner 生成完 Obstacle (Pet) 後，才進行綁定
         if (pet == null)
         {
 #if UNITY_2021_3_18_OR_NEWER || UNITY_2022_2_OR_NEWER
@@ -103,6 +102,8 @@ public class DynamicSpawnManager : MonoBehaviour
     {
         if (showDebugLog) Debug.Log($"[DynamicSpawnManager] 開始執行補充迴圈，目標數量: {maxTrashOnField}");
 
+        int consecutiveFailures = 0;
+
         while (_currentDynamicTrashCount < maxTrashOnField)
         {
             if (weightConfig == null)
@@ -126,12 +127,23 @@ public class DynamicSpawnManager : MonoBehaviour
                 spawnedTrash.isDynamicSpawned = true;
                 _currentDynamicTrashCount++;
                 spawner.RecalculateTotalTrash();
+                consecutiveFailures = 0;
 
                 if (showDebugLog) Debug.Log($"[DynamicSpawnManager] 成功生成動態垃圾。類型: {type}, 階級: {targetTier}。當前總數: {_currentDynamicTrashCount}/{maxTrashOnField}");
             }
             else
             {
-                if (showDebugLog) Debug.LogWarning($"[DynamicSpawnManager] Spawner 生成失敗或回傳空值 (類型: {type}, 階級: {targetTier})。");
+                consecutiveFailures++;
+                if (showDebugLog) Debug.LogWarning($"[DynamicSpawnManager] Spawner 生成失敗 (已嘗試 {consecutiveFailures} 次)。可能是場地過於擁擠或被空氣牆佔滿。");
+
+                // [重點註釋] 效能熔斷防護：當場地被空氣牆與垃圾佔滿，連續生成失敗時強制休眠，阻止死循環拖垮幀數
+                if (consecutiveFailures >= 3)
+                {
+                    if (showDebugLog) Debug.LogWarning("[DynamicSpawnManager] 連續失敗次數過多，觸發效能熔斷機制，暫停生成 2 秒。");
+                    yield return new WaitForSeconds(2f);
+                    consecutiveFailures = 0;
+                    continue;
+                }
             }
 
             yield return null;
@@ -140,8 +152,6 @@ public class DynamicSpawnManager : MonoBehaviour
         if (showDebugLog) Debug.Log($"[DynamicSpawnManager] 補充協程結束。最終數量: {_currentDynamicTrashCount}/{maxTrashOnField}");
         _refillRoutine = null;
     }
-
-    // --- 以下為除錯用右鍵選單功能 ---
 
     [ContextMenu("Debug: 強制觸發補充 (Trigger Refill)")]
     private void DebugForceRefill()

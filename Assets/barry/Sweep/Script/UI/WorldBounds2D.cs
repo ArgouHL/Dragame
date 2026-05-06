@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class WorldBounds2D : MonoBehaviour
 {
@@ -13,8 +11,11 @@ public class WorldBounds2D : MonoBehaviour
 
     public static WorldBounds2D Instance { get; private set; }
 
+    // [重點註釋] 靜態列表管理所有邊界與障礙物，支援場景多個障礙物同時運作
+    public static readonly List<WorldBounds2D> ActiveBounds = new List<WorldBounds2D>(16);
+
     [Header("核心設定")]
-    [Tooltip("是否為主要的世界邊界？勾選才會被註冊為 Singleton 供 PlayerController 與 LevelSpawner 呼叫")]
+    [Tooltip("是否為主要的世界邊界？勾選才會被註冊為 Singleton 供 LevelSpawner 等呼叫")]
     public bool isMainWorldBoundary = true;
     public BoundsType boundsType = BoundsType.Containment;
 
@@ -22,13 +23,11 @@ public class WorldBounds2D : MonoBehaviour
     public Vector2 centerOffset = Vector2.zero;
     public Vector2 size = new Vector2(20f, 10f);
 
-    // [重點註釋] 改為相對座標，完美支援 Prefab 大量複製、移動與縮放調整
     public Vector2 Min => (Vector2)transform.position + centerOffset - size * 0.5f;
     public Vector2 Max => (Vector2)transform.position + centerOffset + size * 0.5f;
 
     private void Awake()
     {
-        // [重點註釋] 保全既有邏輯：只有主邊界會成為 Instance，避免多個障礙物互相覆蓋導致依賴此 Instance 的系統崩潰
         if (isMainWorldBoundary)
         {
             if (Instance != null && Instance != this)
@@ -40,14 +39,21 @@ public class WorldBounds2D : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 取得邊界中心點
-    /// </summary>
+    private void OnEnable()
+    {
+        if (!ActiveBounds.Contains(this))
+        {
+            ActiveBounds.Add(this);
+        }
+    }
+
+    private void OnDisable()
+    {
+        ActiveBounds.Remove(this);
+    }
+
     public Vector2 GetCenter() => (Vector2)transform.position + centerOffset;
 
-    /// <summary>
-    /// 取得完整邊界範圍 (提供給 LevelSpawner 使用)
-    /// </summary>
     public Rect GetWorldRect()
     {
         Vector2 min = Min;
@@ -55,10 +61,6 @@ public class WorldBounds2D : MonoBehaviour
         return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
     }
 
-    /// <summary>
-    /// 檢查是否違規 (保留原名 IsOutside 確保 PlayerController 不報錯)
-    /// 若為邊界模式 = 是否超出邊界；若為障礙物模式 = 是否進入障礙物
-    /// </summary>
     public bool IsOutside(Vector2 pos, float padding = 0f)
     {
         Vector2 min = Min;
@@ -70,14 +72,10 @@ public class WorldBounds2D : MonoBehaviour
                    pos.y < min.y + padding || pos.y > max.y - padding;
         }
 
-        // 障礙物模式：在內部即視為違規，padding 往外擴張
         return pos.x > min.x - padding && pos.x < max.x + padding &&
                pos.y > min.y - padding && pos.y < max.y + padding;
     }
 
-    /// <summary>
-    /// 把位置夾回合法區域，並移除往違規方向的速度分量 (空氣牆式阻擋)
-    /// </summary>
     public bool ConstrainToBounds(ref Vector2 pos, ref Vector2 velocity, float padding = 0f)
     {
         Vector2 min = Min;
@@ -100,7 +98,6 @@ public class WorldBounds2D : MonoBehaviour
         }
         else
         {
-            // 障礙物排斥邏輯：尋找最淺穿透軸向將其推出
             if (pos.x >= minX && pos.x <= maxX && pos.y >= minY && pos.y <= maxY)
             {
                 hit = true;
@@ -121,9 +118,6 @@ public class WorldBounds2D : MonoBehaviour
         return hit;
     }
 
-    /// <summary>
-    /// 真正的物理反彈，根據傳入的彈力係數 (bounciness) 反轉速度
-    /// </summary>
     public void Bounce(ref Vector2 pos, ref Vector2 velocity, float padding = 0f, float bounciness = 1f)
     {
         Vector2 min = Min;
@@ -161,9 +155,6 @@ public class WorldBounds2D : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 取得超出(或進入)邊界時的最近碰撞點與反向法線
-    /// </summary>
     public bool TryGetHitPointAndNormalWorld(Vector2 pos, out Vector2 hitPoint, out Vector2 normal, float padding = 0f)
     {
         hitPoint = pos;
@@ -226,6 +217,44 @@ public class WorldBounds2D : MonoBehaviour
         }
     }
 
+    public static void ApplyAllBounces(ref Vector2 pos, ref Vector2 velocity, float padding, float bounciness)
+    {
+        for (int i = 0; i < ActiveBounds.Count; i++)
+        {
+            var bound = ActiveBounds[i];
+            if (bound.IsOutside(pos, padding))
+            {
+                bound.Bounce(ref pos, ref velocity, padding, bounciness);
+            }
+        }
+    }
+
+    public static bool TryHandlePlayerCollision(Vector2 nextPos, Vector2 moveDir, ref Vector2 safePos, ref Vector2 tempVel, out Vector2 hitPoint, out Vector2 hitNormal, float padding = 0f)
+    {
+        hitPoint = nextPos;
+        hitNormal = -moveDir;
+        bool hasHit = false;
+
+        for (int i = 0; i < ActiveBounds.Count; i++)
+        {
+            var bound = ActiveBounds[i];
+            if (bound.IsOutside(nextPos, padding))
+            {
+                hasHit = true;
+                bound.Bounce(ref safePos, ref tempVel, padding, 0f);
+
+                if (!bound.TryGetHitPointAndNormalWorld(safePos, out hitPoint, out hitNormal, padding))
+                {
+                    hitPoint = safePos;
+                    hitNormal = -moveDir;
+                }
+                break;
+            }
+        }
+        return hasHit;
+    }
+
+#if UNITY_EDITOR
     private void OnDrawGizmos()
     {
         Vector2 min = Min;
@@ -246,4 +275,5 @@ public class WorldBounds2D : MonoBehaviour
         Gizmos.color = new Color(Gizmos.color.r, Gizmos.color.g, Gizmos.color.b, 0.2f);
         Gizmos.DrawCube(GetCenter(), size);
     }
+#endif
 }

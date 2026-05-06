@@ -31,7 +31,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     [SerializeField, Tooltip("撞擊重物時，給予重物的微小推力比例")]
     private float heavyTrashNudgeForce = 0.05f;
 
-    // [重點註釋] 預配置緩存列表，避免防穿模運算造成 GC Alloc
     private readonly List<BaseTrash> _nearbyObstacles = new List<BaseTrash>(32);
 
     [Header("=== 基礎組件 ===")]
@@ -40,7 +39,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     private Camera cam;
     private PlayerInput input;
 
-    // Events
     public event Action<Vector2, float, Vector2, float> OnSweepMove;
     public event Action<float, float, Vector2, Vector2> OnChargedSweepUpdate;
     public event Action<float, float, Vector2, Vector2> OnChargedSweepReleased;
@@ -52,19 +50,15 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     public event Action OnWallHitEvent;
     public event Action<TrashType> OnTrashHitEvent;
     public event Action<float> OnScaleChanged;
-
     public event Action<float, float> OnRightSkillCooldownUpdate;
 
-    // Input Actions
     private InputAction pointerPress;
     private InputAction rightPointerPress;
     private InputAction pointerPosition;
     private InputAction switchModeAction;
-
     private InputAction scrollYAction;
     private InputAction middleClickAction;
 
-    // State Variables
     private Vector2 dragStart;
     private Vector2 moveDir;
     private float currentSpeed;
@@ -80,12 +74,9 @@ public class PlayerController : MonoBehaviour, IAbsorbable
 
     [Header("=== 模式與冷卻設定 ===")]
     public BroomMode currentMode = BroomMode.Impact;
-    [SerializeField, Tooltip("切換技能的冷卻時間，防止滾輪一次滾動觸發多次切換造成狂閃")]
-    private float switchCooldown = 0.2f;
+    [SerializeField] private float switchCooldown = 0.2f;
     private float _lastSwitchTime = 0f;
-
-    [SerializeField, Tooltip("右鍵蓄力技能的冷卻時間(秒)")]
-    private float rightSkillCooldown = 5f;
+    [SerializeField] private float rightSkillCooldown = 5f;
     private float _currentRightSkillCooldown = 0f;
 
     [Header("=== 移動參數 ===")]
@@ -93,10 +84,8 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     public float deceleration = 8f;
 
     [Header("=== Sticky Weight Settings (重量系統) ===")]
-    [SerializeField, Tooltip("每單位重量減少多少速度比例")]
-    private float weightPenaltyFactor = 0.5f;
-    [SerializeField, Tooltip("就算再重，速度也不會低於此值")]
-    private float minStickySpeed = 2f;
+    [SerializeField] private float weightPenaltyFactor = 0.5f;
+    [SerializeField] private float minStickySpeed = 2f;
     private float _currentStickyLoad = 0f;
 
     [Header("=== 基礎判定參數 ===")]
@@ -121,25 +110,19 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     [SerializeField] private Vector3 cameraOffset = new Vector3(0f, 15f, -15f);
     [SerializeField] private float growthSyncRatio = 1f;
     [SerializeField] private float growthLerpSpeed = 3f;
-    [SerializeField, Min(0f), Tooltip("鏡頭跟隨的平滑時間。越小越靈敏，越大越穩。")]
-    private float cameraFollowSmoothTime = 0.18f;
-    [SerializeField, Min(0f), Tooltip("鏡頭前視偏移的平滑時間。")]
-    private float cameraLookAheadSmoothTime = 0.12f;
-    [SerializeField, Min(0f), Tooltip("鏡頭前視偏移距離。")]
-    private float cameraLookAheadDistance = 1.5f;
-    [SerializeField, Min(0f), Tooltip("低於這個速度時，不再產生前視偏移，避免抖動。")]
-    private float cameraLookAheadSpeedThreshold = 0.15f;
+    [SerializeField] private float cameraFollowSmoothTime = 0.18f;
+    [SerializeField] private float cameraLookAheadSmoothTime = 0.12f;
+    [SerializeField] private float cameraLookAheadDistance = 1.5f;
+    [SerializeField] private float cameraLookAheadSpeedThreshold = 0.15f;
 
     private Vector3 _baseCameraOffset;
     private Vector3 _baseScale;
-
     private float _baseMaxSpeed;
     private float _baseSweepRadius;
     private Vector2 _baseSweepOffset;
     private float _baseWeight;
     private float _baseChargeCenterOffset;
     private float _baseForwardReachOffset;
-
     private Vector3 _targetScale;
     private Vector3 _targetCameraOffset;
     private Vector3 _cameraFollowVelocity;
@@ -153,7 +136,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
 
     public Vector2 GetSweepCenter() => (Vector2)transform.position + sweepOffset;
     public bool CanBeAbsorbed => !isBeingAbsorbed && _absorbCooldown <= 0f;
-
     public float GetEffectiveSweepRadius() => sweepRadius * sweepForgivenessMultiplier;
 
     public Vector2 GetDynamicSweepCenter()
@@ -238,14 +220,12 @@ public class PlayerController : MonoBehaviour, IAbsorbable
 
         _baseCameraOffset = cameraOffset;
         _baseScale = transform.localScale;
-
         _baseMaxSpeed = maxSpeed;
         _baseSweepRadius = sweepRadius;
         _baseSweepOffset = sweepOffset;
         _baseWeight = wieght;
         _baseChargeCenterOffset = chargeCenterOffset;
         _baseForwardReachOffset = forwardReachOffset;
-
         _targetScale = _baseScale;
         _targetCameraOffset = _baseCameraOffset;
         _cameraFollowVelocity = Vector3.zero;
@@ -260,13 +240,10 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         pointerPress.canceled += OnRelease;
         rightPointerPress.started += OnRightPress;
         rightPointerPress.canceled += OnRightRelease;
-
         if (switchModeAction != null) switchModeAction.performed += OnSwitchModeInput;
-
         scrollYAction.Enable();
         middleClickAction.Enable();
         middleClickAction.performed += OnSwitchModeInput;
-
         PetAI.OnPetScaleChanged += HandlePetGrowth;
     }
 
@@ -277,30 +254,24 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         pointerPress.canceled -= OnRelease;
         rightPointerPress.started -= OnRightPress;
         rightPointerPress.canceled -= OnRightRelease;
-
         if (switchModeAction != null) switchModeAction.performed -= OnSwitchModeInput;
-
         scrollYAction.Disable();
         middleClickAction.Disable();
         middleClickAction.performed -= OnSwitchModeInput;
-
         PetAI.OnPetScaleChanged -= HandlePetGrowth;
     }
 
     private void HandlePetGrowth(float petScaleMultiplier)
     {
         float actualMultiplier = 1f + ((petScaleMultiplier - 1f) * growthSyncRatio);
-
         _targetScale = _baseScale * actualMultiplier;
         _targetCameraOffset = _baseCameraOffset * actualMultiplier;
-
         maxSpeed = _baseMaxSpeed * actualMultiplier;
         sweepRadius = _baseSweepRadius * actualMultiplier;
         sweepOffset = _baseSweepOffset * actualMultiplier;
         wieght = _baseWeight * actualMultiplier;
         chargeCenterOffset = _baseChargeCenterOffset * actualMultiplier;
         forwardReachOffset = _baseForwardReachOffset * actualMultiplier;
-
         OnScaleChanged?.Invoke(actualMultiplier);
         effectManager?.ScaleEffects(actualMultiplier);
     }
@@ -317,23 +288,16 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         }
 
         float scrollValue = scrollYAction.ReadValue<float>();
-        if (Mathf.Abs(scrollValue) > 0.1f)
-        {
-            ToggleSkillMode();
-        }
+        if (Mathf.Abs(scrollValue) > 0.1f) ToggleSkillMode();
 
         if (_vfxCooldownTimer > 0f) _vfxCooldownTimer -= Time.deltaTime;
         if (_absorbCooldown > 0f) _absorbCooldown -= Time.deltaTime;
 
         if (transform.localScale != _targetScale)
-        {
             transform.localScale = Vector3.Lerp(transform.localScale, _targetScale, Time.deltaTime * growthLerpSpeed);
-        }
 
         if (cameraOffset != _targetCameraOffset)
-        {
             cameraOffset = Vector3.Lerp(cameraOffset, _targetCameraOffset, Time.deltaTime * growthLerpSpeed);
-        }
 
         Vector2 pointerWorld = ScreenToWorld(pointerPosition.ReadValue<Vector2>());
         Vector2 center = GetSweepCenter();
@@ -380,37 +344,31 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         if (currentSpeed > 0.01f)
         {
             velocityVector = moveDir * currentSpeed;
-            Vector2 nextPos = rb.position + velocityVector * Time.fixedDeltaTime;
 
-            if (WorldBounds2D.Instance != null && WorldBounds2D.Instance.IsOutside(nextPos))
+            // [重點註釋] 邏輯校正：使用 2.5D 的真實判定中心 (sweepCenter) 與真實半徑 (bodyCollisionRadius) 撞擊牆壁
+            Vector2 nextCenter = center + velocityVector * Time.fixedDeltaTime;
+            Vector2 safeCenter = nextCenter;
+            Vector2 tempVel = velocityVector;
+
+            if (WorldBounds2D.TryHandlePlayerCollision(nextCenter, moveDir, ref safeCenter, ref tempVel, out var hitPoint, out var hitNormal, bodyCollisionRadius))
             {
-                Vector2 safePos = nextPos;
-                Vector2 tempVel = velocityVector;
-                WorldBounds2D.Instance.Bounce(ref safePos, ref tempVel);
-
-                rb.position = safePos;
+                // 反向推算出正確的腳底位置 (rb.position) 確保視覺不脫節
+                rb.position = safeCenter - sweepOffset;
                 rb.linearVelocity = Vector2.zero;
-
-                if (TryGetWallHitFromWorldBounds(nextPos, moveDir, out var hitPoint, out var hitNormal))
-                    effectManager.PlayWallHit(hitPoint, hitNormal);
-                else
-                    effectManager.PlayWallHit(nextPos, -moveDir);
-
+                effectManager.PlayWallHit(hitPoint, hitNormal);
                 OnWallHitEvent?.Invoke();
                 currentSpeed = 0f;
                 effectManager.StopTrail();
                 return;
             }
 
-            // [重點註釋] 幾何防穿模：位移賦值前，主動檢查並強行分離實體交疊
+            Vector2 nextPos = safeCenter - sweepOffset;
             bool blockedByHeavy = false;
             nextPos = ResolveObstaclePenetrations(nextPos, ref blockedByHeavy);
-
             rb.position = nextPos;
 
             if (blockedByHeavy)
             {
-                // 若被重物完全阻擋，立刻剝奪動力，防止鑽模
                 currentSpeed = 0f;
                 rb.linearVelocity = Vector2.zero;
                 effectManager.StopTrail();
@@ -418,14 +376,12 @@ public class PlayerController : MonoBehaviour, IAbsorbable
             else
             {
                 rb.linearVelocity = velocityVector;
-
                 float damping = 1f - (deceleration * Time.fixedDeltaTime);
                 currentSpeed *= Mathf.Clamp01(damping);
                 if (currentSpeed < 0.05f) currentSpeed = 0f;
 
                 float effectiveMax = GetEffectiveMaxSpeed();
                 sweepPower = Mathf.Clamp01(currentSpeed / effectiveMax);
-
                 effectManager.UpdateTrail(center, moveDir, sweepPower, true);
                 OnSweepMove?.Invoke(GetDynamicSweepCenter(), GetEffectiveSweepRadius(), moveDir, sweepPower);
             }
@@ -437,7 +393,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         }
     }
 
-    // [重點註釋] 連續幾何防穿模演算法：不僅排斥重物，也強行擠出輕垃圾達成 0 穿模
     private Vector2 ResolveObstaclePenetrations(Vector2 projectedPos, ref bool blocked)
     {
         if (currentMode == BroomMode.Sticky || SpatialGridManager.Instance == null)
@@ -466,22 +421,18 @@ public class PlayerController : MonoBehaviour, IAbsorbable
                     float dist = Mathf.Sqrt(distSqr);
                     float penetration = minDist - dist;
                     Vector2 pushDir = (dist > 0.001f) ? -toTrash / dist : -moveDir;
-                    if (pushDir == Vector2.zero) pushDir = Vector2.up; // 極端防護
+                    if (pushDir == Vector2.zero) pushDir = Vector2.up;
 
                     if (isHeavy)
                     {
-                        // 重物：玩家被推回，且不對重物施加任何推力，保證重物絕對靜止
                         projectedPos += pushDir * penetration;
                         sweepCenter = projectedPos + sweepOffset;
                         blocked = true;
                     }
                     else
                     {
-                        // 輕物：主動將垃圾座標強行擠出物理邊界，達成零穿模
                         Vector2 correction = -pushDir * penetration;
                         trash.transform.position = (Vector2)trash.transform.position + correction;
-
-                        // 補上撞擊觸發，讓垃圾順勢飛走
                         float power = Mathf.Clamp01(currentSpeed / Mathf.Max(GetEffectiveMaxSpeed(), 0.01f));
                         trash.ApplyBroomHit(moveDir, power);
                     }
@@ -495,7 +446,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     {
         if (cam == null) cam = Camera.main;
         if (cam == null) return;
-
         UpdateCameraFollow();
     }
 
@@ -511,11 +461,7 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         else
         {
             _cameraLookAheadOffset = Vector3.SmoothDamp(
-                _cameraLookAheadOffset,
-                lookAheadTarget,
-                ref _cameraLookAheadVelocity,
-                cameraLookAheadSmoothTime
-            );
+                _cameraLookAheadOffset, lookAheadTarget, ref _cameraLookAheadVelocity, cameraLookAheadSmoothTime);
         }
 
         Vector3 desiredPosition = transform.position + cameraOffset + _cameraLookAheadOffset;
@@ -528,11 +474,7 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         }
 
         cam.transform.position = Vector3.SmoothDamp(
-            cam.transform.position,
-            desiredPosition,
-            ref _cameraFollowVelocity,
-            cameraFollowSmoothTime
-        );
+            cam.transform.position, desiredPosition, ref _cameraFollowVelocity, cameraFollowSmoothTime);
     }
 
     private Vector3 GetCameraLookAheadTarget()
@@ -553,16 +495,12 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         _cameraLookAheadVelocity = Vector3.zero;
     }
 
-    private void OnSwitchModeInput(InputAction.CallbackContext ctx)
-    {
-        ToggleSkillMode();
-    }
+    private void OnSwitchModeInput(InputAction.CallbackContext ctx) => ToggleSkillMode();
 
     private void ToggleSkillMode()
     {
         if (Time.time - _lastSwitchTime < switchCooldown) return;
         _lastSwitchTime = Time.time;
-
         currentMode = (currentMode == BroomMode.Impact) ? BroomMode.Sticky : BroomMode.Impact;
         _currentStickyLoad = 0f;
         OnModeChanged?.Invoke(currentMode);
@@ -587,11 +525,7 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         isLeftDown = false;
         OnLeftReleaseAction?.Invoke();
         if (isBeingAbsorbed) return;
-        if (blockBoth)
-        {
-            if (!isRightDown) UnblockBoth();
-            return;
-        }
+        if (blockBoth) { if (!isRightDown) UnblockBoth(); return; }
         effectManager.HideDragLine();
         Vector2 drag = ScreenToWorld(pointerPosition.ReadValue<Vector2>()) - dragStart;
         float len = drag.magnitude;
@@ -607,7 +541,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     private void OnRightPress(InputAction.CallbackContext ctx)
     {
         if (isBeingAbsorbed || _currentRightSkillCooldown > 0f) return;
-
         PlayerAnimatorController.instance?.stateMachine.ChangeState(PlayerAnimatorController.instance.powerState);
         rb.linearVelocity = Vector2.zero;
         isRightDown = true;
@@ -620,14 +553,9 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     private void OnRightRelease(InputAction.CallbackContext ctx)
     {
         if (!isRightDown) return;
-
         isRightDown = false;
         if (isBeingAbsorbed) return;
-        if (blockBoth)
-        {
-            if (!isLeftDown) UnblockBoth();
-            return;
-        }
+        if (blockBoth) { if (!isLeftDown) UnblockBoth(); return; }
 
         float hold = Mathf.Clamp(Time.time - rightPressStartTime, 0f, maxChargeTime);
         float t = Mathf.Clamp01(hold / maxChargeTime);
@@ -647,7 +575,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
 
         OnChargedSweepReleased?.Invoke(hold, t, origin, chargedDir);
         effectManager.HideChargeSweep();
-
         _currentRightSkillCooldown = rightSkillCooldown;
         OnRightSkillCooldownUpdate?.Invoke(_currentRightSkillCooldown, rightSkillCooldown);
     }
@@ -661,15 +588,11 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         ResetCameraMotion();
     }
 
-    private void UnblockBoth()
-    {
-        blockBoth = false;
-    }
+    private void UnblockBoth() => blockBoth = false;
 
     public void EmitTrashHit(Vector2 hitPoint, Vector2 hitNormal, TrashType type)
     {
         if (_vfxCooldownTimer > 0f) return;
-
         effectManager.PlayTrashHit(hitPoint, hitNormal);
         OnTrashHitEvent?.Invoke(type);
         _vfxCooldownTimer = vfxHitCooldown;
@@ -678,7 +601,6 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     public void ExitBlackHole(Vector2 ejectDir, float ejectSpeed)
     {
         _absorbCooldown = absorbInvincibleTime;
-
         isBeingAbsorbed = false;
         blockBoth = false;
         isBlocking = false;
@@ -687,10 +609,8 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         _currentStickyLoad = 0f;
         moveDir = ejectDir;
         currentSpeed = ejectSpeed;
-
         ResetCameraMotion();
         transform.localScale = Vector3.zero;
-
         SetCollidersEnabled(true);
         rb.linearVelocity = moveDir * currentSpeed;
         effectManager.HideDragLine();
@@ -706,21 +626,11 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         if (m <= 0f) return;
         float e = Mathf.Clamp01(sweepRestitution);
         float ratio = (M - e * m) / (M + m);
-        if (!allowBounceBack)
-        {
-            currentSpeed *= Mathf.Clamp01(ratio);
-        }
+        if (!allowBounceBack) currentSpeed *= Mathf.Clamp01(ratio);
         else
         {
-            if (ratio < 0f)
-            {
-                moveDir = -moveDir;
-                currentSpeed *= Mathf.Clamp01(-ratio);
-            }
-            else
-            {
-                currentSpeed *= Mathf.Clamp01(ratio);
-            }
+            if (ratio < 0f) { moveDir = -moveDir; currentSpeed *= Mathf.Clamp01(-ratio); }
+            else currentSpeed *= Mathf.Clamp01(ratio);
         }
 
         if (currentSpeed <= 0.01f)
@@ -729,19 +639,7 @@ public class PlayerController : MonoBehaviour, IAbsorbable
             rb.linearVelocity = Vector2.zero;
             effectManager.StopTrail();
         }
-        else
-        {
-            rb.linearVelocity = moveDir * currentSpeed;
-        }
-    }
-
-    private bool TryGetWallHitFromWorldBounds(Vector2 worldPos, Vector2 moveDir, out Vector2 hitPoint, out Vector2 hitNormal)
-    {
-        hitPoint = worldPos;
-        hitNormal = -moveDir;
-        var wb = WorldBounds2D.Instance;
-        if (wb == null) return false;
-        return wb.TryGetHitPointAndNormalWorld(worldPos, out hitPoint, out hitNormal);
+        else rb.linearVelocity = moveDir * currentSpeed;
     }
 
     private Vector2 ScreenToWorld(Vector2 p)
@@ -749,10 +647,7 @@ public class PlayerController : MonoBehaviour, IAbsorbable
         if (cam == null) return Vector2.zero;
         Ray ray = cam.ScreenPointToRay(p);
         Plane groundPlane = new Plane(Vector3.back, Vector3.zero);
-        if (groundPlane.Raycast(ray, out float enter))
-        {
-            return ray.GetPoint(enter);
-        }
+        if (groundPlane.Raycast(ray, out float enter)) return ray.GetPoint(enter);
         return cam.ScreenToWorldPoint(new Vector3(p.x, p.y, Mathf.Abs(cam.transform.position.z)));
     }
 
@@ -760,14 +655,9 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     {
         if (_areCollidersEnabled == enabled) return;
         _areCollidersEnabled = enabled;
-
         for (int i = 0; i < colliders.Length; i++)
-        {
             if (colliders[i] != null && colliders[i].enabled != enabled)
-            {
                 colliders[i].enabled = enabled;
-            }
-        }
     }
 
 #if UNITY_EDITOR
@@ -775,10 +665,8 @@ public class PlayerController : MonoBehaviour, IAbsorbable
     {
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(GetSweepCenter(), sweepRadius);
-
         Gizmos.color = Color.magenta;
         Gizmos.DrawWireSphere(GetSweepCenter(), bodyCollisionRadius);
-
         if (Application.isPlaying)
         {
             Gizmos.color = new Color(1f, 0.5f, 0f, 0.5f);

@@ -20,6 +20,14 @@ public class UIManager : MonoBehaviour
     [SerializeField, Tooltip("開啟以在主控台追蹤介面與狀態切換")]
     private bool showDebugLogs = true;
 
+    [Header("=== 游標設置 (UI 軟體游標) ===")]
+    [SerializeField, Tooltip("將畫布上代表游標的 UI 圖片 (RectTransform) 拖入此處。務必關閉該 Image 的 Raycast Target！")]
+    private RectTransform customCursorUI;
+    [SerializeField, Tooltip("點擊時向左旋轉的角度 (Z軸正向)")]
+    private float clickRotationAngle = 15f;
+    [SerializeField, Tooltip("旋轉動效演出時間")]
+    private float clickRotationDuration = 0.15f;
+
     [Header("=== 分數 UI ===")]
     [SerializeField] private TMP_Text scoreText;
     [SerializeField, Tooltip("加分時放大的最大倍率")] private float punchScaleMultiplier = 1.5f;
@@ -68,8 +76,7 @@ public class UIManager : MonoBehaviour
 
     [Header("=== 結算評級 UI ===")]
     [SerializeField] private Image endGradeImage;
-    [SerializeField, Tooltip("請嚴格依照分數由高到低排列設定")]
-    private GradeThreshold[] gradeSettings;
+    [SerializeField] private GradeThreshold[] gradeSettings;
 
     [Header("=== 輸入綁定 ===")]
     [SerializeField] private InputAction pauseAction = new InputAction("Pause", binding: "<Keyboard>/escape");
@@ -81,12 +88,13 @@ public class UIManager : MonoBehaviour
     private int lastDisplaySeconds = -1;
     private int currentScore;
     private int currentTeachIndex;
-    private bool blockInputThisFrame = false; // 用於防止按鈕點擊與 Update 衝突
+    private bool blockInputThisFrame = false;
 
     private Image _teachImage;
     private Vector3 _originalScoreScale;
     private Color _originalScoreColor;
     private Coroutine _scorePunchRoutine;
+    private Coroutine _cursorPunchRoutine;
     private PlayerController _cachedPlayerController;
 
     private void Awake()
@@ -139,6 +147,12 @@ public class UIManager : MonoBehaviour
     {
         Log("初始化介面系統，啟動狀態設定。");
 
+        // 若啟用自定義 UI 游標，隱藏原生系統游標
+        if (customCursorUI != null)
+        {
+            Cursor.visible = false;
+        }
+
         isGameOver = false;
         isPaused = false;
         remainingTime = gameDuration;
@@ -155,7 +169,6 @@ public class UIManager : MonoBehaviour
         endPanel?.SetActive(false);
 
         OpenTeachPanel();
-
         UpdateTimerText();
         RefreshTrash(TrashCounter.Collected, TrashCounter.Total);
 
@@ -174,21 +187,22 @@ public class UIManager : MonoBehaviour
 
     private void Update()
     {
-        // 處理教學面板點擊換圖
-        if (isTeaching)
+        // 處理自定義 UI 游標的跟隨與點擊動畫
+        if (customCursorUI != null)
         {
+            customCursorUI.position = Input.mousePosition;
             if (Input.GetMouseButtonDown(0))
             {
-                if (blockInputThisFrame) return; // 如果是開啟面板的那一幀，不做反應
-                AdvanceTeachImage();
+                TriggerCursorClickAnim();
             }
         }
 
-        // 每一幀結束前重置輸入擋箭牌
-        if (blockInputThisFrame)
+        if (Input.GetMouseButtonDown(0) && isTeaching)
         {
-            blockInputThisFrame = false;
+            if (!blockInputThisFrame) AdvanceTeachImage();
         }
+
+        if (blockInputThisFrame) blockInputThisFrame = false;
 
         if (isPaused || isTeaching || isGameOver) return;
 
@@ -201,6 +215,41 @@ public class UIManager : MonoBehaviour
             return;
         }
         UpdateTimerText();
+    }
+
+    private void TriggerCursorClickAnim()
+    {
+        if (_cursorPunchRoutine != null) StopCoroutine(_cursorPunchRoutine);
+        _cursorPunchRoutine = StartCoroutine(CursorPunchCoroutine());
+    }
+
+    // 將 UI 游標向左旋轉再回正，使用 unscaledDeltaTime 確保暫停時仍有動畫
+    private IEnumerator CursorPunchCoroutine()
+    {
+        float halfDuration = clickRotationDuration * 0.5f;
+        float elapsed = 0f;
+        Quaternion targetRot = Quaternion.Euler(0, 0, clickRotationAngle);
+
+        while (elapsed < halfDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = elapsed / halfDuration;
+            customCursorUI.rotation = Quaternion.Slerp(Quaternion.identity, targetRot, t);
+            yield return null;
+        }
+
+        elapsed = 0f;
+
+        while (elapsed < halfDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = elapsed / halfDuration;
+            customCursorUI.rotation = Quaternion.Slerp(targetRot, Quaternion.identity, t);
+            yield return null;
+        }
+
+        customCursorUI.rotation = Quaternion.identity;
+        _cursorPunchRoutine = null;
     }
 
     private void AddScore(int scoreToAdd)
@@ -233,7 +282,7 @@ public class UIManager : MonoBehaviour
         {
             elapsed += Time.unscaledDeltaTime;
             float t = elapsed / halfDuration;
-            float easeT = t * (2f - t);
+            float easeT = t * t * (3f - 2f * t);
 
             scoreText.transform.localScale = Vector3.Lerp(_originalScoreScale, targetScale, easeT);
             scoreText.color = Color.Lerp(_originalScoreColor, punchColor, easeT);
@@ -246,7 +295,7 @@ public class UIManager : MonoBehaviour
         {
             elapsed += Time.unscaledDeltaTime;
             float t = elapsed / halfDuration;
-            float easeT = t * t;
+            float easeT = t * t * (3f - 2f * t);
 
             scoreText.transform.localScale = Vector3.Lerp(targetScale, _originalScoreScale, easeT);
             scoreText.color = Color.Lerp(punchColor, _originalScoreColor, easeT);
@@ -294,21 +343,15 @@ public class UIManager : MonoBehaviour
     {
         if (rightSkillIcon == null) return;
 
-        if (currentCooldown > 0f)
+        bool isOnCooldown = currentCooldown > 0f;
+        rightSkillIcon.color = isOnCooldown ? onCooldownColor : Color.white;
+
+        if (rightSkillCooldownText != null)
         {
-            rightSkillIcon.color = onCooldownColor;
-            if (rightSkillCooldownText != null)
+            rightSkillCooldownText.gameObject.SetActive(isOnCooldown);
+            if (isOnCooldown)
             {
-                rightSkillCooldownText.gameObject.SetActive(true);
                 rightSkillCooldownText.text = Mathf.CeilToInt(currentCooldown).ToString();
-            }
-        }
-        else
-        {
-            rightSkillIcon.color = Color.white;
-            if (rightSkillCooldownText != null)
-            {
-                rightSkillCooldownText.gameObject.SetActive(false);
             }
         }
     }
@@ -366,7 +409,7 @@ public class UIManager : MonoBehaviour
     {
         isTeaching = true;
         currentTeachIndex = 0;
-        blockInputThisFrame = true; // 標記此幀不偵測點擊，避免按鈕衝突
+        blockInputThisFrame = true;
         pausePanel?.SetActive(false);
 
         if (teachPanel != null)
@@ -438,24 +481,19 @@ public class UIManager : MonoBehaviour
         if (endGradeImage != null && gradeSettings != null && gradeSettings.Length > 0)
         {
             Sprite finalGrade = null;
+            int maxValidScore = -1;
+
             for (int i = 0; i < gradeSettings.Length; i++)
             {
-                if (currentScore >= gradeSettings[i].minScore)
+                if (currentScore >= gradeSettings[i].minScore && gradeSettings[i].minScore > maxValidScore)
                 {
+                    maxValidScore = gradeSettings[i].minScore;
                     finalGrade = gradeSettings[i].gradeSprite;
-                    break;
                 }
             }
 
-            if (finalGrade != null)
-            {
-                endGradeImage.sprite = finalGrade;
-                endGradeImage.gameObject.SetActive(true);
-            }
-            else
-            {
-                endGradeImage.gameObject.SetActive(false);
-            }
+            endGradeImage.gameObject.SetActive(finalGrade != null);
+            if (finalGrade != null) endGradeImage.sprite = finalGrade;
         }
 
         if (endPanel != null)
@@ -475,6 +513,8 @@ public class UIManager : MonoBehaviour
     private void OnReturnToStartMenu()
     {
         Time.timeScale = 1f;
+        // 離開場景時恢復系統原生游標
+        Cursor.visible = true;
         SceneManager.LoadScene("StartMenu");
     }
 
@@ -482,8 +522,10 @@ public class UIManager : MonoBehaviour
     {
         Time.timeScale = isPlayingGame ? 1f : 0f;
         if (PlayerController.instance != null) PlayerController.instance.enabled = isPlayingGame;
-        Cursor.visible = true;
+
         Cursor.lockState = CursorLockMode.None;
+        // 若使用了自定義 UI 游標，則保持原生游標隱藏；反之才顯示原生游標
+        Cursor.visible = customCursorUI == null;
     }
 
     private void OnDestroy()

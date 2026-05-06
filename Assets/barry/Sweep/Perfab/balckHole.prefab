@@ -176,22 +176,34 @@ MonoBehaviour:
   vomitForce: 5
   eatingPauseDuration: 1
   levelConfigs:
-  - requiredTotalTrash: 12
+  - requiredTotalTrash: 3
     scaleMultiplier: 1
     maxEatTier: 1
     animatorController: {fileID: 9100000, guid: dbb8a174cc33b5c4490ebe307810e2d9, type: 2}
-  - requiredTotalTrash: 12
+  - requiredTotalTrash: 5
     scaleMultiplier: 1.4
     maxEatTier: 2
     animatorController: {fileID: 9100000, guid: fb213742a52ba284597b4adfebc68802, type: 2}
-  - requiredTotalTrash: 22
+  - requiredTotalTrash: 7
     scaleMultiplier: 1.8
     maxEatTier: 3
     animatorController: {fileID: 9100000, guid: c4d115e7a9f74324cb6d7c8f6c569a0c, type: 2}
-  - requiredTotalTrash: 35
+  - requiredTotalTrash: 10
     scaleMultiplier: 2.2
     maxEatTier: 4
     animatorController: {fileID: 9100000, guid: 808912fd3b97e4947a0d33313e277224, type: 2}
+  - requiredTotalTrash: 15
+    scaleMultiplier: 2.3
+    maxEatTier: 4
+    animatorController: {fileID: 9100000, guid: c7389e661b4fb9a4fb289e23661cad7a, type: 2}
+  - requiredTotalTrash: 20
+    scaleMultiplier: 2.5
+    maxEatTier: 4
+    animatorController: {fileID: 9100000, guid: c6b027b3e863709448f401656c6d4cba, type: 2}
+  - requiredTotalTrash: 100
+    scaleMultiplier: 2.7
+    maxEatTier: 4
+    animatorController: {fileID: 9100000, guid: 1b5bdef8a24077240934bd2f33ebbedf, type: 2}
   petAnimator: {fileID: 8882046433364214306}
   currentState: 0
   currentLevel: 0

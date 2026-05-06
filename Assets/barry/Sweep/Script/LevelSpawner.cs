@@ -129,7 +129,6 @@ public class LevelSpawner : MonoBehaviour
         Rect view = GetCameraWorldRect();
         Rect exclude = new Rect(view.x - 1f, view.y - 1f, view.width + 2f, view.height + 2f);
 
-        // 直接在安全邊界內取隨機值，避免 ClampToWorld 造成物體大量堆積在空氣牆邊緣
         float safeXMin = world.xMin + wallSafeDistance;
         float safeXMax = world.xMax - wallSafeDistance;
         float safeYMin = world.yMin + wallSafeDistance;
@@ -138,10 +137,9 @@ public class LevelSpawner : MonoBehaviour
         for (int i = 0; i < 10; i++)
         {
             Vector3 p = new Vector3(Random.Range(safeXMin, safeXMax), Random.Range(safeYMin, safeYMax), 0f);
-            if (!exclude.Contains(p)) return p; // 已經在安全範圍內，直接回傳
+            if (!exclude.Contains(p)) return p;
         }
 
-        // 嘗試 10 次都失敗的保底輸出
         return new Vector3(Random.Range(safeXMin, safeXMax), Random.Range(safeYMin, safeYMax), 0f);
     }
 
@@ -162,7 +160,6 @@ public class LevelSpawner : MonoBehaviour
         if (WorldBounds2D.Instance == null) return p;
         Rect r = WorldBounds2D.Instance.GetWorldRect();
 
-        // 使用 Inspector 設置的安全距離取代原先寫死的 0.5f
         p.x = Mathf.Clamp(p.x, r.xMin + wallSafeDistance, r.xMax - wallSafeDistance);
         p.y = Mathf.Clamp(p.y, r.yMin + wallSafeDistance, r.yMax - wallSafeDistance);
         return p;
@@ -170,15 +167,19 @@ public class LevelSpawner : MonoBehaviour
 
     private bool IsPositionValid(Vector3 p)
     {
+        // [重點註釋] 核心阻斷：遍歷所有激活的空氣牆與邊界，只要目標座標在任何一個阻擋區域內，直接判定無效
+        for (int i = 0; i < WorldBounds2D.ActiveBounds.Count; i++)
+        {
+            if (WorldBounds2D.ActiveBounds[i].IsOutside(p, wallSafeDistance)) return false;
+        }
+
         float d2 = minSafeDistance * minSafeDistance;
 
-        // Permanent obstacles (never removed)
         for (int i = 0; i < _permanentOccupiedPos.Count; i++)
         {
             if (Vector3.SqrMagnitude(p - _permanentOccupiedPos[i]) < d2) return false;
         }
 
-        // Live check active trash
         if (TrashPool.Instance != null && TrashPool.Instance.ActiveTrashList != null)
         {
             var list = TrashPool.Instance.ActiveTrashList;
