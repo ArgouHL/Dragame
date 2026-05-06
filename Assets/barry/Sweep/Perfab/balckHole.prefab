@@ -162,8 +162,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58449d558ff9ea43a531cfef89f41f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minWalkDistance: 3
-  maxWalkDistance: 8
+  minWalkDistance: 5
+  maxWalkDistance: 12
   moveSpeed: 3
   wallPadding: 1.5
   suckRadius: 1
